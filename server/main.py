@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from server.database import init_db, get_db, DB_PATH
-from server.routes import boxes, categories
+from server.routes import boxes, categories, box_detail
 from server.mqtt import listener
 import aiosqlite
 
@@ -72,6 +72,12 @@ async def handle_mqtt(box_id: str, msg_type: str, payload: dict):
                 payload.get("version"),
                 now,
             ))
+            # Push stored category back to the Feather
+            async with db.execute("SELECT category FROM boxes WHERE box_id=?", (box_id,)) as cur:
+                row = await cur.fetchone()
+            if row and row["category"] and row["category"] != "Unassigned":
+                listener.send_command(box_id, {"action": "set_category", "category": row["category"]})
+                print(f"[server] Pushed category '{row['category']}' to {box_id} on boot")
 
         # Log all events
         await db.execute(
@@ -100,6 +106,7 @@ _CLIENT = _BASE / "client"
 
 app.include_router(boxes.router)
 app.include_router(categories.router)
+app.include_router(box_detail.router)
 
 app.mount("/client", StaticFiles(directory=str(_CLIENT)), name="client")
 

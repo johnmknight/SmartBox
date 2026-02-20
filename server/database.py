@@ -27,6 +27,8 @@ async def init_db():
                 wifi_rssi   INTEGER,
                 firmware    TEXT,
                 last_seen   TEXT,
+                inventory   TEXT DEFAULT '',
+                photo_path  TEXT,
                 created_at  TEXT DEFAULT (datetime('now'))
             )
         """)
@@ -48,6 +50,13 @@ async def init_db():
                 ts          TEXT DEFAULT (datetime('now'))
             )
         """)
+        # Migrate existing DBs
+        for col, defn in [("inventory", "TEXT DEFAULT ''"), ("photo_path", "TEXT")]:
+            try:
+                await db.execute(f"ALTER TABLE boxes ADD COLUMN {col} {defn}")
+            except Exception:
+                pass  # column already exists
+
         # Seed default categories
         await db.execute("""
             INSERT OR IGNORE INTO categories (name, color, icon) VALUES

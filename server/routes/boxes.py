@@ -25,6 +25,13 @@ async def get_box(box_id: str, db=Depends(get_db)):
 @router.post("/{box_id}/command")
 async def send_command(box_id: str, cmd: BoxCommand, db=Depends(get_db)):
     listener.send_command(box_id, cmd.model_dump(exclude_none=True))
+    # For set_category, also persist directly to DB so dashboard reflects immediately
+    if cmd.action == "set_category" and cmd.category:
+        await db.execute(
+            "UPDATE boxes SET category=? WHERE box_id=?",
+            (cmd.category, box_id)
+        )
+        await db.commit()
     return {"ok": True, "box_id": box_id, "command": cmd.action}
 
 @router.get("/{box_id}/events")

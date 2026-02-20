@@ -899,6 +899,9 @@ function renderBoxes() {
   Object.keys(existing).forEach(id => {
     if (!seen.has(id)) existing[id].remove();
   });
+
+  // Fetch inventory counts for all boxes
+  _boxes.forEach(box => fetchInventoryCount(box.box_id));
 }
 
 function boxCardHTML(box) {
@@ -931,14 +934,28 @@ function boxCardHTML(box) {
       </div>
       <div class="battery-pct">${batLabel}</div>
     </div>
+    <div class="box-inventory" id="inv-${box.box_id}" style="font-family:var(--mono);font-size:9px;color:var(--text-dim);margin-bottom:10px;letter-spacing:0.08em;">INVENTORY: ...</div>
     <div class="box-footer">
       <div class="box-meta">LAST: ${lastSeen}</div>
       <div class="box-actions">
+        <a class="action-btn" href="/box/${box.box_id}" target="_blank" style="text-decoration:none">&#x1F4F1;</a>
         <button class="action-btn" onclick="openModal('${box.box_id}')">CMD</button>
         <button class="action-btn danger" onclick="sendIdentify('${box.box_id}')">ID</button>
       </div>
     </div>
   </div>`;
+}
+
+// ─── Inventory count ───────────────────────────────────────
+async function fetchInventoryCount(boxId) {
+  try {
+    const r = await fetch(`${API}/api/boxes/${boxId}/inventory`);
+    if (!r.ok) return;
+    const data = await r.json();
+    const items = (data.inventory || '').split('\n').filter(l => l.trim()).length;
+    const el = document.getElementById(`inv-${boxId}`);
+    if (el) el.textContent = items > 0 ? `INVENTORY: ${items} ITEM${items !== 1 ? 'S' : ''}` : 'INVENTORY: EMPTY';
+  } catch(e) {}
 }
 
 // ─── Stats ─────────────────────────────────────────────────
