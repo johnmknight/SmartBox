@@ -94,37 +94,27 @@ def handle_button(event):
     global _current_mode, _nav_active, _nav_timeout
     if _current_interrupt is not None:
         return
-    if event == "OK_HOLD":
-        _nav_active = not _nav_active
-        _nav_timeout = time.monotonic() + 10
-        set_pixel(AMBER if _nav_active else GREEN)
-        if _nav_active:
-            _render_nav_overlay()
-        return
-    if _nav_active:
+    if event in ("UP_PRESS", "DOWN_PRESS"):
         idx = _MODE_ORDER.index(_current_mode)
         if event == "UP_PRESS":
             idx = (idx - 1) % len(_MODE_ORDER)
-            _current_mode = _MODE_ORDER[idx]
-            _render_nav_overlay()
-        elif event == "DOWN_PRESS":
+        else:
             idx = (idx + 1) % len(_MODE_ORDER)
-            _current_mode = _MODE_ORDER[idx]
-            _render_nav_overlay()
-        elif event == "OK_PRESS":
-            _nav_active = False
-            set_pixel(GREEN)
-            print(f"[display] Mode selected: {_current_mode}")
-        elif event == "UP_HOLD":
-            # Hold UP = exit nav without changing
-            _nav_active = False
-            set_pixel(GREEN)
-        return
-    if _nav_active and time.monotonic() > _nav_timeout:
-        _nav_active = False
+        _current_mode = _MODE_ORDER[idx]
+        _nav_active = True
+        _nav_timeout = time.monotonic() + 2.0
+        print(f"[display] Mode -> {_current_mode}")
+        _render_nav_overlay()
+    elif event == "OK_PRESS":
+        # Quick identify flash
+        set_pixel(WHITE, brightness=1.0)
+        time.sleep(0.3)
         set_pixel(GREEN)
 
 def nav_active():
+    global _nav_active
+    if _nav_active and time.monotonic() > _nav_timeout:
+        _nav_active = False
     return _nav_active
 
 def _render_nav_overlay():
@@ -172,8 +162,8 @@ def _render_nav_overlay():
         sub_lbl.x = 18; sub_lbl.y = y + 11
         g.append(sub_lbl)
     # Footer hint
-    hint = label.Label(terminalio.FONT, text="UP/DN=SCROLL  OK=SELECT", color=DIMGRAY, scale=1)
-    hint.x = 10; hint.y = 128
+    hint = label.Label(terminalio.FONT, text="UP/DN=CYCLE  OK=FLASH", color=DIMGRAY, scale=1)
+    hint.x = 20; hint.y = 128
     g.append(hint)
     display.root_group = g
 
