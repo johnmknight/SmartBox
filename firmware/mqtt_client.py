@@ -58,7 +58,7 @@ def poll():
         if now - _last_reconnect > _RECONNECT_INTERVAL:
             _last_reconnect = now; _connect()
         return
-    try: _client.loop(timeout=1)
+    try: _client.loop(timeout=0.1)
     except Exception as e:
         print(f"[mqtt] Loop error: {e}"); _connected = False
 
