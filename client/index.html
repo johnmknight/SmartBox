@@ -723,7 +723,10 @@ header {
   <div class="rack-view">
     <div class="section-header">
       <div class="section-title">Active Boxes</div>
-      <div class="box-count" id="box-count">0 UNITS</div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="box-count" id="box-count">0 UNITS</div>
+        <button class="action-btn" id="edit-rack-btn" onclick="openRackModal()" style="display:none">EDIT RACK</button>
+      </div>
     </div>
     <div class="box-grid" id="box-grid">
       <div class="empty-state">
@@ -773,6 +776,26 @@ header {
           <div class="event-msg" style="color:var(--text-dim)">Waiting for events...</div>
         </div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Rack Modal -->
+<div class="modal-overlay" id="rack-modal">
+  <div class="modal">
+    <div class="modal-title">Edit Rack</div>
+    <div class="modal-sub" id="rack-modal-sub">rack-01</div>
+    <div class="modal-field">
+      <label class="modal-label">Display Name</label>
+      <input class="modal-input" id="rack-name" placeholder="e.g. Workshop Rack A" maxlength="40">
+    </div>
+    <div class="modal-field">
+      <label class="modal-label">Zone <span style="color:var(--amber);font-size:9px;">// MARCHOG</span></label>
+      <input class="modal-input" id="rack-zone" placeholder="e.g. Workshop, Garage" maxlength="40">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeRackModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveRack()">Save</button>
     </div>
   </div>
 </div>
@@ -837,8 +860,10 @@ header {
 const API = '';
 let _boxes = [];
 let _categories = [];
+let _racks = {};  // keyed by rack_id
 let _events = [];
 let _targetBox = null;
+let _targetRack = null;
 let _pollTimer = null;
 
 // ─── Fetch boxes ───────────────────────────────────────────
@@ -848,6 +873,7 @@ async function fetchBoxes() {
     if (!r.ok) throw new Error(r.status);
     _boxes = await r.json();
     setServerStatus(true);
+    await fetchRacks();
     renderBoxes();
     updateStats();
   } catch(e) {
@@ -861,6 +887,15 @@ async function fetchCategories() {
     _categories = await r.json();
     renderCategories();
     populateCategorySelect();
+  } catch(e) {}
+}
+
+async function fetchRacks() {
+  try {
+    const r = await fetch(`${API}/api/racks/`);
+    const rows = await r.json();
+    _racks = {};
+    rows.forEach(r => _racks[r.rack_id] = r);
   } catch(e) {}
 }
 
@@ -883,9 +918,11 @@ function renderBoxes() {
   count.textContent = `${_boxes.length} UNIT${_boxes.length !== 1 ? 'S' : ''}`;
 
   const racks = [...new Set(_boxes.map(b => b.rack_id).filter(Boolean))];
-  label.textContent = racks.length
-    ? `RACK: ${racks.join(' / ')}`
-    : 'RACK CONTROL';
+  const rackLabels = racks.map(id => {
+    const r = _racks[id];
+    return r ? (r.display_name || id) : id;
+  });
+  label.textContent = rackLabels.length ? `RACK: ${rackLabels.join(' / ')}` : 'RACK CONTROL';
 
   if (!_boxes.length) {
     grid.innerHTML = `
@@ -923,6 +960,11 @@ function renderBoxes() {
     if (!seen.has(id)) existing[id].remove();
   });
 
+  // Show edit rack button when there's exactly one rack (common case)
+  const rackIds = [...new Set(_boxes.map(b => b.rack_id).filter(Boolean))];
+  const editRackBtn = document.getElementById('edit-rack-btn');
+  if (editRackBtn) editRackBtn.style.display = rackIds.length ? 'block' : 'none';
+
   // Fetch inventory counts for all boxes
   _boxes.forEach(box => fetchInventoryCount(box.box_id));
 }
@@ -945,7 +987,7 @@ function boxCardHTML(box) {
   <div class="box-card state-${state}" data-box-id="${box.box_id}">
     <div class="box-header">
       <div>
-        <div class="box-id">${box.box_id} // ${box.rack_id || 'rack-??'}</div>
+        <div class="box-id">${box.box_id} // ${(_racks[box.rack_id] && _racks[box.rack_id].display_name) || box.rack_id || 'rack-??'}</div>
         <div class="box-name">${box.display_name || box.box_id}</div>
       </div>
       <div class="state-badge state-${state}">${state.replace('_',' ')}</div>
@@ -1101,8 +1143,39 @@ function closeModal() {
   _targetBox = null;
 }
 
-document.getElementById('modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
-document.getElementById('edit-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeEditModal(); });
+document.getElementById('rack-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeRackModal(); });
+
+function openRackModal(rackId) {
+  const ids = [...new Set(_boxes.map(b => b.rack_id).filter(Boolean))];
+  _targetRack = rackId || ids[0];
+  if (!_targetRack) return;
+  const rack = _racks[_targetRack] || {};
+  document.getElementById('rack-modal-sub').textContent = _targetRack;
+  document.getElementById('rack-name').value = rack.display_name || '';
+  document.getElementById('rack-zone').value = rack.zone || '';
+  document.getElementById('rack-modal').classList.add('open');
+}
+
+function closeRackModal() {
+  document.getElementById('rack-modal').classList.remove('open');
+  _targetRack = null;
+}
+
+async function saveRack() {
+  const name = document.getElementById('rack-name').value.trim();
+  const zone = document.getElementById('rack-zone').value.trim();
+  const r = await fetch(`${API}/api/racks/${_targetRack}`, {
+    method: 'PATCH',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ display_name: name, zone })
+  });
+  if (r.ok) {
+    showToast('Rack updated');
+    closeRackModal();
+    await fetchRacks();
+    renderBoxes();
+  }
+}
 
 function onActionChange() {
   const action = document.getElementById('cmd-action').value;
@@ -1164,6 +1237,7 @@ document.getElementById('modal').addEventListener('click', e => {
 // ─── Init & poll ──────────────────────────────────────────
 async function init() {
   await fetchCategories();
+  await fetchRacks();
   await fetchBoxes();
   setInterval(fetchBoxes, 5000);
   setInterval(fetchCategories, 30000);

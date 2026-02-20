@@ -34,6 +34,14 @@ async def init_db():
             )
         """)
         await db.execute("""
+            CREATE TABLE IF NOT EXISTS racks (
+                rack_id      TEXT PRIMARY KEY,
+                display_name TEXT,
+                zone         TEXT DEFAULT '',
+                created_at   TEXT DEFAULT (datetime('now'))
+            )
+        """)
+        await db.execute("""
             CREATE TABLE IF NOT EXISTS categories (
                 id          INTEGER PRIMARY KEY AUTOINCREMENT,
                 name        TEXT UNIQUE NOT NULL,

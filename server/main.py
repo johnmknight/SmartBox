@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from server.database import init_db, get_db, DB_PATH
-from server.routes import boxes, categories, box_detail
+from server.routes import boxes, categories, box_detail, racks
 from server.mqtt import listener
 import aiosqlite
 
@@ -107,6 +107,7 @@ _CLIENT = _BASE / "client"
 app.include_router(boxes.router)
 app.include_router(categories.router)
 app.include_router(box_detail.router)
+app.include_router(racks.router)
 
 app.mount("/client", StaticFiles(directory=str(_CLIENT)), name="client")
 
