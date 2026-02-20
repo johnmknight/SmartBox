@@ -1,0 +1,1074 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SMARTTOOLBOX — RACK CONTROL</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+
+:root {
+  --bg:        #080c10;
+  --bg2:       #0d1117;
+  --bg3:       #111820;
+  --border:    #1a2535;
+  --border2:   #243040;
+  --cyan:      #00d4ff;
+  --cyan-dim:  #00d4ff33;
+  --amber:     #f59e0b;
+  --amber-dim: #f59e0b22;
+  --green:     #00ff80;
+  --red:       #ff4444;
+  --yellow:    #ffff00;
+  --text:      #c8d8e8;
+  --text-dim:  #556677;
+  --text-mid:  #8899aa;
+  --mono:      'Space Mono', monospace;
+  --sans:      'IBM Plex Sans', sans-serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 14px;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Scanline overlay */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.08) 2px,
+    rgba(0,0,0,0.08) 4px
+  );
+  pointer-events: none;
+  z-index: 1000;
+}
+
+/* Corner decorations */
+.corner {
+  position: fixed;
+  width: 60px; height: 60px;
+  border-color: var(--cyan);
+  border-style: solid;
+  opacity: 0.3;
+  z-index: 999;
+}
+.corner-tl { top: 12px; left: 12px; border-width: 2px 0 0 2px; }
+.corner-tr { top: 12px; right: 12px; border-width: 2px 2px 0 0; }
+.corner-bl { bottom: 12px; left: 12px; border-width: 0 0 2px 2px; }
+.corner-br { bottom: 12px; right: 12px; border-width: 0 2px 2px 0; }
+
+/* Header */
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 28px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg2);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.logo {
+  font-family: var(--mono);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  color: var(--cyan);
+  text-shadow: 0 0 20px var(--cyan);
+}
+
+.logo span {
+  color: var(--amber);
+}
+
+.header-divider {
+  width: 1px;
+  height: 28px;
+  background: var(--border2);
+}
+
+.rack-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 0.1em;
+}
+
+.dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--text-dim);
+  animation: pulse 2s ease-in-out infinite;
+}
+.dot.online  { background: var(--green); box-shadow: 0 0 8px var(--green); }
+.dot.offline { background: var(--red); animation: none; }
+.dot.warn    { background: var(--amber); }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.last-update {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 0.1em;
+}
+
+/* Main layout */
+.main {
+  display: grid;
+  grid-template-columns: 1fr 260px;
+  gap: 0;
+  min-height: calc(100vh - 57px);
+}
+
+/* Rack view */
+.rack-view {
+  padding: 24px 28px;
+  border-right: 1px solid var(--border);
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.section-title {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.section-title::before {
+  content: '';
+  display: block;
+  width: 20px; height: 1px;
+  background: var(--cyan);
+}
+
+.box-count {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 0.1em;
+}
+
+/* Box grid */
+.box-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+/* Box card */
+.box-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 16px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.3s, box-shadow 0.3s;
+  cursor: default;
+}
+
+.box-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--border);
+  transition: background 0.3s;
+}
+
+.box-card.state-DOCKED::before   { background: var(--green); box-shadow: 0 0 8px var(--green); }
+.box-card.state-AWAY::before     { background: var(--amber); box-shadow: 0 0 8px var(--amber); }
+.box-card.state-SET_DOWN::before { background: var(--yellow); box-shadow: 0 0 8px var(--yellow); }
+.box-card.state-DOCKING::before  { background: var(--cyan); box-shadow: 0 0 8px var(--cyan); }
+
+.box-card:hover {
+  border-color: var(--border2);
+  box-shadow: 0 0 20px rgba(0,212,255,0.05);
+}
+
+.box-card.state-DOCKED:hover   { border-color: #00ff8044; }
+.box-card.state-AWAY:hover     { border-color: #f59e0b44; }
+.box-card.state-SET_DOWN:hover { border-color: #ffff0044; }
+
+.box-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.box-id {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.box-name {
+  font-family: var(--sans);
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text);
+  margin-top: 2px;
+}
+
+.state-badge {
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  padding: 3px 8px;
+  border-radius: 2px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.state-DOCKED   { background: #00ff8022; color: var(--green); border: 1px solid #00ff8044; }
+.state-AWAY     { background: #f59e0b22; color: var(--amber); border: 1px solid #f59e0b44; }
+.state-SET_DOWN { background: #ffff0022; color: var(--yellow); border: 1px solid #ffff0044; }
+.state-DOCKING  { background: #00d4ff22; color: var(--cyan); border: 1px solid #00d4ff44; }
+.state-UNKNOWN  { background: #55667722; color: var(--text-dim); border: 1px solid #33445566; }
+
+.box-category {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--cyan);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.box-category::before {
+  content: '//';
+  color: var(--text-dim);
+  font-size: 10px;
+}
+
+/* Battery bar */
+.battery-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.battery-bar-bg {
+  flex: 1;
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.battery-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.5s ease;
+}
+
+.battery-pct {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-mid);
+  width: 36px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* Box footer */
+.box-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.box-meta {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--text-dim);
+  letter-spacing: 0.08em;
+}
+
+.box-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.action-btn {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  padding: 3px 8px;
+  background: transparent;
+  border: 1px solid var(--border2);
+  color: var(--text-dim);
+  border-radius: 2px;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: all 0.2s;
+}
+
+.action-btn:hover {
+  border-color: var(--cyan);
+  color: var(--cyan);
+  background: var(--cyan-dim);
+}
+
+.action-btn.danger:hover {
+  border-color: var(--amber);
+  color: var(--amber);
+  background: var(--amber-dim);
+}
+
+/* Empty state */
+.empty-state {
+  grid-column: 1/-1;
+  text-align: center;
+  padding: 80px 40px;
+  border: 1px dashed var(--border2);
+  border-radius: 4px;
+}
+
+.empty-title {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--text-dim);
+  letter-spacing: 0.15em;
+  margin-bottom: 8px;
+}
+
+.empty-sub {
+  font-size: 12px;
+  color: var(--text-dim);
+  opacity: 0.6;
+}
+
+/* Sidebar */
+.sidebar {
+  padding: 24px 20px;
+  background: var(--bg2);
+}
+
+.sidebar-section {
+  margin-bottom: 28px;
+}
+
+.sidebar-title {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sidebar-title::before {
+  content: '';
+  display: block;
+  width: 12px; height: 1px;
+  background: var(--amber);
+}
+
+/* Summary stats */
+.stat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.stat-card {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 10px 12px;
+}
+
+.stat-val {
+  font-family: var(--mono);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--cyan);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.stat-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+
+.stat-card.amber .stat-val { color: var(--amber); }
+.stat-card.green .stat-val { color: var(--green); }
+.stat-card.red   .stat-val { color: var(--red); }
+
+/* Category list */
+.category-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.category-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  border-left: 3px solid var(--border2);
+  transition: border-color 0.2s;
+}
+
+.category-item:hover {
+  border-left-color: var(--cyan);
+}
+
+.category-name {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.category-count {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  background: var(--border);
+  padding: 2px 6px;
+  border-radius: 2px;
+}
+
+/* Event log */
+.event-log {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.event-log::-webkit-scrollbar { width: 4px; }
+.event-log::-webkit-scrollbar-track { background: var(--border); }
+.event-log::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+.event-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 7px 10px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.event-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.event-box {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--cyan);
+  letter-spacing: 0.1em;
+}
+
+.event-time {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--text-dim);
+}
+
+.event-msg {
+  font-size: 11px;
+  color: var(--text-mid);
+}
+
+/* Command modal */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.8);
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+
+.modal-overlay.open {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.modal {
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-top: 2px solid var(--cyan);
+  border-radius: 4px;
+  padding: 24px;
+  width: 380px;
+  position: relative;
+}
+
+.modal-title {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  color: var(--cyan);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.modal-sub {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-bottom: 20px;
+}
+
+.modal-field {
+  margin-bottom: 14px;
+}
+
+.modal-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  display: block;
+}
+
+.modal-select, .modal-input {
+  width: 100%;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 8px 12px;
+  border-radius: 3px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.modal-select:focus, .modal-input:focus {
+  border-color: var(--cyan);
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.btn {
+  flex: 1;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 9px;
+  border-radius: 3px;
+  cursor: pointer;
+  border: 1px solid;
+  transition: all 0.2s;
+}
+
+.btn-primary {
+  background: var(--cyan-dim);
+  border-color: var(--cyan);
+  color: var(--cyan);
+}
+
+.btn-primary:hover {
+  background: var(--cyan);
+  color: var(--bg);
+}
+
+.btn-ghost {
+  background: transparent;
+  border-color: var(--border2);
+  color: var(--text-dim);
+}
+
+.btn-ghost:hover {
+  border-color: var(--text-mid);
+  color: var(--text);
+}
+
+/* Charging icon */
+.charging { color: var(--cyan); font-size: 9px; }
+
+/* Notification toast */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-left: 3px solid var(--cyan);
+  padding: 12px 18px;
+  border-radius: 3px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text);
+  z-index: 600;
+  transform: translateY(80px);
+  opacity: 0;
+  transition: all 0.3s ease;
+}
+
+.toast.show {
+  transform: translateY(0);
+  opacity: 1;
+}
+</style>
+</head>
+<body>
+
+<div class="corner corner-tl"></div>
+<div class="corner corner-tr"></div>
+<div class="corner corner-bl"></div>
+<div class="corner corner-br"></div>
+
+<header>
+  <div class="header-left">
+    <div class="logo">SMART<span>TOOLBOX</span></div>
+    <div class="header-divider"></div>
+    <div class="rack-label" id="rack-label">RACK CONTROL // LOADING...</div>
+  </div>
+  <div class="header-right">
+    <div class="status-indicator">
+      <div class="dot" id="server-dot"></div>
+      <span id="server-status">CONNECTING</span>
+    </div>
+    <div class="last-update" id="last-update">--:--:--</div>
+  </div>
+</header>
+
+<div class="main">
+  <div class="rack-view">
+    <div class="section-header">
+      <div class="section-title">Active Boxes</div>
+      <div class="box-count" id="box-count">0 UNITS</div>
+    </div>
+    <div class="box-grid" id="box-grid">
+      <div class="empty-state">
+        <div class="empty-title">NO BOXES DETECTED</div>
+        <div class="empty-sub">Waiting for Feather units to connect via MQTT</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-title">Fleet Status</div>
+      <div class="stat-grid">
+        <div class="stat-card green">
+          <div class="stat-val" id="stat-docked">0</div>
+          <div class="stat-label">Docked</div>
+        </div>
+        <div class="stat-card amber">
+          <div class="stat-val" id="stat-away">0</div>
+          <div class="stat-label">Away</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-val" id="stat-total">0</div>
+          <div class="stat-label">Total</div>
+        </div>
+        <div class="stat-card red">
+          <div class="stat-val" id="stat-low">0</div>
+          <div class="stat-label">Low Batt</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-title">Categories</div>
+      <div class="category-list" id="category-list">
+        <div class="event-item" style="color:var(--text-dim);font-size:11px;">Loading...</div>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-title">Event Log</div>
+      <div class="event-log" id="event-log">
+        <div class="event-item">
+          <div class="event-msg" style="color:var(--text-dim)">Waiting for events...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Command Modal -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-title">Send Command</div>
+    <div class="modal-sub" id="modal-sub">box-01</div>
+    <div class="modal-field">
+      <label class="modal-label">Action</label>
+      <select class="modal-select" id="cmd-action" onchange="onActionChange()">
+        <option value="identify">Identify (flash LED)</option>
+        <option value="set_category">Set Category</option>
+        <option value="set_mode">Set Display Mode</option>
+        <option value="reboot">Reboot</option>
+      </select>
+    </div>
+    <div class="modal-field" id="field-category" style="display:none">
+      <label class="modal-label">Category</label>
+      <select class="modal-select" id="cmd-category"></select>
+    </div>
+    <div class="modal-field" id="field-mode" style="display:none">
+      <label class="modal-label">Mode</label>
+      <select class="modal-select" id="cmd-mode">
+        <option value="TOOLBOX">Toolbox</option>
+        <option value="CLOCK">Clock</option>
+        <option value="WEATHER">Weather</option>
+        <option value="BATTERY">Battery</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="sendCommand()">Send</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = '';
+let _boxes = [];
+let _categories = [];
+let _events = [];
+let _targetBox = null;
+let _pollTimer = null;
+
+// ─── Fetch boxes ───────────────────────────────────────────
+async function fetchBoxes() {
+  try {
+    const r = await fetch(`${API}/api/boxes/`);
+    if (!r.ok) throw new Error(r.status);
+    _boxes = await r.json();
+    setServerStatus(true);
+    renderBoxes();
+    updateStats();
+  } catch(e) {
+    setServerStatus(false);
+  }
+}
+
+async function fetchCategories() {
+  try {
+    const r = await fetch(`${API}/api/categories/`);
+    _categories = await r.json();
+    renderCategories();
+    populateCategorySelect();
+  } catch(e) {}
+}
+
+function setServerStatus(ok) {
+  const dot = document.getElementById('server-dot');
+  const lbl = document.getElementById('server-status');
+  dot.className = 'dot ' + (ok ? 'online' : 'offline');
+  lbl.textContent = ok ? 'SERVER ONLINE' : 'SERVER OFFLINE';
+  const now = new Date();
+  document.getElementById('last-update').textContent =
+    now.toTimeString().slice(0,8);
+}
+
+// ─── Render boxes ──────────────────────────────────────────
+function renderBoxes() {
+  const grid = document.getElementById('box-grid');
+  const count = document.getElementById('box-count');
+  const label = document.getElementById('rack-label');
+
+  count.textContent = `${_boxes.length} UNIT${_boxes.length !== 1 ? 'S' : ''}`;
+
+  const racks = [...new Set(_boxes.map(b => b.rack_id).filter(Boolean))];
+  label.textContent = racks.length
+    ? `RACK: ${racks.join(' / ')}`
+    : 'RACK CONTROL';
+
+  if (!_boxes.length) {
+    grid.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-title">NO BOXES DETECTED</div>
+        <div class="empty-sub">Waiting for Feather units to connect via MQTT</div>
+      </div>`;
+    return;
+  }
+
+  // Keyed update — preserve existing cards
+  const existing = {};
+  grid.querySelectorAll('.box-card').forEach(el => {
+    existing[el.dataset.boxId] = el;
+  });
+
+  const seen = new Set();
+  _boxes.forEach(box => {
+    seen.add(box.box_id);
+    const el = existing[box.box_id];
+    const html = boxCardHTML(box);
+    if (el) {
+      el.outerHTML = html; // replace in place
+    } else {
+      grid.insertAdjacentHTML('beforeend', html);
+    }
+  });
+
+  // Remove stale cards
+  Object.keys(existing).forEach(id => {
+    if (!seen.has(id)) existing[id].remove();
+  });
+
+  // Rebuild if needed
+  if (!grid.querySelector('.box-card')) {
+    grid.innerHTML = _boxes.map(boxCardHTML).join('');
+  }
+}
+
+function boxCardHTML(box) {
+  const state   = box.state || 'UNKNOWN';
+  const pct     = box.battery_pct != null ? box.battery_pct : -1;
+  const pctCap  = Math.min(100, Math.max(0, pct));
+  const batColor = pct < 0 ? '#334455'
+                 : pct < 20 ? '#ff4444'
+                 : pct < 50 ? '#f59e0b'
+                 : '#00ff80';
+  const batLabel = pct < 0 ? '---'
+                 : (box.charging ? '&#x26A1; ' : '') + Math.round(pct) + '%';
+  const lastSeen = box.last_seen
+    ? new Date(box.last_seen).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})
+    : '--:--';
+
+  return `
+  <div class="box-card state-${state}" data-box-id="${box.box_id}">
+    <div class="box-header">
+      <div>
+        <div class="box-id">${box.box_id} // ${box.rack_id || 'rack-??'}</div>
+        <div class="box-name">${box.display_name || box.box_id}</div>
+      </div>
+      <div class="state-badge state-${state}">${state.replace('_',' ')}</div>
+    </div>
+    <div class="box-category">${box.category || 'Unassigned'}</div>
+    <div class="battery-row">
+      <div class="battery-bar-bg">
+        <div class="battery-bar-fill" style="width:${pctCap}%;background:${batColor}"></div>
+      </div>
+      <div class="battery-pct">${batLabel}</div>
+    </div>
+    <div class="box-footer">
+      <div class="box-meta">LAST: ${lastSeen}</div>
+      <div class="box-actions">
+        <button class="action-btn" onclick="openModal('${box.box_id}')">CMD</button>
+        <button class="action-btn danger" onclick="sendIdentify('${box.box_id}')">ID</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ─── Stats ─────────────────────────────────────────────────
+function updateStats() {
+  document.getElementById('stat-total').textContent  = _boxes.length;
+  document.getElementById('stat-docked').textContent = _boxes.filter(b => b.state === 'DOCKED').length;
+  document.getElementById('stat-away').textContent   = _boxes.filter(b => b.state === 'AWAY').length;
+  document.getElementById('stat-low').textContent    = _boxes.filter(b => b.battery_pct >= 0 && b.battery_pct < 20).length;
+}
+
+// ─── Categories ────────────────────────────────────────────
+function renderCategories() {
+  const list = document.getElementById('category-list');
+  if (!_categories.length) { list.innerHTML = '<div class="event-item" style="color:var(--text-dim);font-size:11px;">None defined</div>'; return; }
+
+  const counts = {};
+  _boxes.forEach(b => { counts[b.category] = (counts[b.category] || 0) + 1; });
+
+  list.innerHTML = _categories.map(cat => `
+    <div class="category-item" style="border-left-color:${cat.color}">
+      <div class="category-name">${cat.name}</div>
+      <div class="category-count">${counts[cat.name] || 0}</div>
+    </div>`).join('');
+}
+
+function populateCategorySelect() {
+  const sel = document.getElementById('cmd-category');
+  sel.innerHTML = _categories.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+}
+
+// ─── Event log ─────────────────────────────────────────────
+function logEvent(boxId, msg) {
+  _events.unshift({ boxId, msg, time: new Date() });
+  if (_events.length > 30) _events.pop();
+  renderEvents();
+}
+
+function renderEvents() {
+  const log = document.getElementById('event-log');
+  if (!_events.length) { log.innerHTML = '<div class="event-item"><div class="event-msg" style="color:var(--text-dim)">No events yet</div></div>'; return; }
+  log.innerHTML = _events.slice(0, 8).map(e => `
+    <div class="event-item">
+      <div class="event-top">
+        <div class="event-box">${e.boxId}</div>
+        <div class="event-time">${e.time.toTimeString().slice(0,8)}</div>
+      </div>
+      <div class="event-msg">${e.msg}</div>
+    </div>`).join('');
+}
+
+// ─── Commands ──────────────────────────────────────────────
+function openModal(boxId) {
+  _targetBox = boxId;
+  document.getElementById('modal-sub').textContent = boxId;
+  document.getElementById('modal').classList.add('open');
+  onActionChange();
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+  _targetBox = null;
+}
+
+function onActionChange() {
+  const action = document.getElementById('cmd-action').value;
+  document.getElementById('field-category').style.display = action === 'set_category' ? '' : 'none';
+  document.getElementById('field-mode').style.display = action === 'set_mode' ? '' : 'none';
+}
+
+async function sendCommand() {
+  if (!_targetBox) return;
+  const action = document.getElementById('cmd-action').value;
+  const body = { action };
+  if (action === 'set_category') body.category = document.getElementById('cmd-category').value;
+  if (action === 'set_mode') body.mode = document.getElementById('cmd-mode').value;
+
+  try {
+    const r = await fetch(`${API}/api/boxes/${_targetBox}/command`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(body)
+    });
+    if (r.ok) {
+      logEvent(_targetBox, `CMD: ${action}`);
+      showToast(`Command sent to ${_targetBox}`);
+      closeModal();
+    }
+  } catch(e) {
+    showToast('Failed to send command', true);
+  }
+}
+
+async function sendIdentify(boxId) {
+  try {
+    await fetch(`${API}/api/boxes/${boxId}/command`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ action: 'identify' })
+    });
+    logEvent(boxId, 'IDENTIFY pulse sent');
+    showToast(`Identifying ${boxId}...`);
+  } catch(e) {}
+}
+
+// ─── Toast ────────────────────────────────────────────────
+let _toastTimer = null;
+function showToast(msg, error=false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.borderLeftColor = error ? 'var(--amber)' : 'var(--cyan)';
+  t.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// Close modal on overlay click
+document.getElementById('modal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeModal();
+});
+
+// ─── Init & poll ──────────────────────────────────────────
+async function init() {
+  await fetchCategories();
+  await fetchBoxes();
+  setInterval(fetchBoxes, 5000);
+  setInterval(fetchCategories, 30000);
+}
+
+init();
+</script>
+</body>
+</html>

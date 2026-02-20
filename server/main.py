@@ -4,6 +4,8 @@ from datetime import datetime, timezone
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -95,9 +97,11 @@ app.add_middleware(CORSMiddleware,
 app.include_router(boxes.router)
 app.include_router(categories.router)
 
+app.mount("/client", StaticFiles(directory="client"), name="client")
+
 @app.get("/")
 def root():
-    return {"service": "SmartToolbox Server", "version": "1.0.0", "status": "ok"}
+    return FileResponse("client/index.html")
 
 @app.get("/health")
 def health():
