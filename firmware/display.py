@@ -32,14 +32,14 @@ _backlight.value = True
 _pixel = neopixel.NeoPixel(board.NEOPIXEL, 1, brightness=0.1)
 
 # -- Buttons --
-_btn = {}
-for name, pin in [("UP", board.D0), ("OK", board.D1), ("DOWN", board.D2)]:
-    b = DigitalInOut(pin)
-    b.direction = Direction.INPUT
-    b.pull = Pull.UP
-    _btn[name] = b
+# D0: Pull.UP, active LOW (False = pressed)
+# D1: Pull.DOWN, active HIGH (True = pressed)
+# D2: Pull.DOWN, active HIGH (True = pressed)
+_d0 = DigitalInOut(board.D0); _d0.switch_to_input(pull=Pull.UP)
+_d1 = DigitalInOut(board.D1); _d1.switch_to_input(pull=Pull.DOWN)
+_d2 = DigitalInOut(board.D2); _d2.switch_to_input(pull=Pull.DOWN)
 
-_btn_last  = {"UP": True, "OK": True, "DOWN": True}
+_btn_last   = {"D0": False, "D1": False, "D2": False}
 _hold_start = {}
 
 # -- Modes --
@@ -78,38 +78,43 @@ def poll_buttons():
     global _btn_last, _hold_start
     events = []
     now = time.monotonic()
-    for name, btn in _btn.items():
-        current_val = btn.value
-        last_val    = _btn_last[name]
-        if not current_val and last_val:
+    # Normalize all to True=pressed
+    states = {
+        "D0": not _d0.value,
+        "D1": _d1.value,
+        "D2": _d2.value,
+    }
+    for name, pressed in states.items():
+        last = _btn_last[name]
+        if pressed and not last:
             _hold_start[name] = now
-        elif current_val and not last_val:
+        elif not pressed and last:
             held = now - _hold_start.get(name, now)
-            events.append(f"{name}_HOLD" if held >= 2.0 else f"{name}_PRESS")
+            events.append(f"{name}_LONG" if held >= 1.5 else f"{name}_SHORT")
             _hold_start.pop(name, None)
-        _btn_last[name] = current_val
+        _btn_last[name] = pressed
     return events
 
 def handle_button(event):
     global _current_mode, _nav_active, _nav_timeout
     if _current_interrupt is not None:
         return
-    if event in ("UP_PRESS", "DOWN_PRESS"):
+    if event in ("D0_SHORT", "D1_SHORT"):
         idx = _MODE_ORDER.index(_current_mode)
-        if event == "UP_PRESS":
+        if event == "D0_SHORT":
             idx = (idx - 1) % len(_MODE_ORDER)
         else:
             idx = (idx + 1) % len(_MODE_ORDER)
         _current_mode = _MODE_ORDER[idx]
         _nav_active = True
-        _nav_timeout = time.monotonic() + 2.0
+        _nav_timeout = time.monotonic() + 3.0
         print(f"[display] Mode -> {_current_mode}")
         _render_nav_overlay()
-    elif event == "OK_PRESS":
-        # Quick identify flash
+    elif event == "D2_SHORT":
         set_pixel(WHITE, brightness=1.0)
         time.sleep(0.3)
         set_pixel(GREEN)
+        print("[display] Identify flash")
 
 def nav_active():
     global _nav_active
@@ -118,54 +123,32 @@ def nav_active():
     return _nav_active
 
 def _render_nav_overlay():
-    """Full-screen mode picker shown during nav mode."""
-    _LABELS = {
-        MODE_TOOLBOX: ("TOOLBOX", "Status & QR"),
-        MODE_CLOCK:   ("CLOCK",   "Time & Date"),
-        MODE_WEATHER: ("WEATHER", "Conditions"),
-        MODE_BATTERY: ("BATTERY", "Power stats"),
-    }
+    """Simple text mode picker."""
+    _LABELS = [
+        (MODE_TOOLBOX, "TOOLBOX"),
+        (MODE_CLOCK,   "CLOCK"),
+        (MODE_WEATHER, "WEATHER"),
+        (MODE_BATTERY, "BATTERY"),
+    ]
     g = displayio.Group()
     # Dark background
     bm = displayio.Bitmap(240, 135, 1)
-    pal = displayio.Palette(1); pal[0] = 0x08090C
+    pal = displayio.Palette(1); pal[0] = 0x000000
     g.append(displayio.TileGrid(bm, pixel_shader=pal))
     # Header
-    hdr = label.Label(terminalio.FONT, text="SELECT MODE", color=AMBER, scale=1)
-    hdr.x = 76; hdr.y = 8
+    hdr = label.Label(terminalio.FONT, text="-- SELECT MODE --", color=AMBER, scale=1)
+    hdr.x = 52; hdr.y = 10
     g.append(hdr)
-    # Divider
-    div_bm = displayio.Bitmap(240, 1, 1)
-    div_pal = displayio.Palette(1); div_pal[0] = AMBER
-    g.append(displayio.TileGrid(div_bm, pixel_shader=div_pal, x=0, y=16))
     # Mode list
-    for i, mode in enumerate(_MODE_ORDER):
+    for i, (mode, name) in enumerate(_LABELS):
         selected = (mode == _current_mode)
-        y = 26 + i * 26
-        if selected:
-            # Highlight bar
-            sel_bm = displayio.Bitmap(240, 22, 1)
-            sel_pal = displayio.Palette(1); sel_pal[0] = 0x001A2A
-            g.append(displayio.TileGrid(sel_bm, pixel_shader=sel_pal, x=0, y=y - 4))
-            # Cyan left bar
-            bar_bm = displayio.Bitmap(3, 22, 1)
-            bar_pal = displayio.Palette(1); bar_pal[0] = CYAN
-            g.append(displayio.TileGrid(bar_bm, pixel_shader=bar_pal, x=0, y=y - 4))
-            arrow = label.Label(terminalio.FONT, text=">", color=CYAN, scale=1)
-            arrow.x = 6; arrow.y = y + 2
-            g.append(arrow)
-        name, sub = _LABELS.get(mode, (mode, ""))
-        name_lbl = label.Label(terminalio.FONT, text=name, color=CYAN if selected else WHITE, scale=1)
-        name_lbl.x = 18; name_lbl.y = y
-        g.append(name_lbl)
-        sub_lbl = label.Label(terminalio.FONT, text=sub, color=0x445566, scale=1)
-        sub_lbl.x = 18; sub_lbl.y = y + 11
-        g.append(sub_lbl)
-    # Footer hint
-    hint = label.Label(terminalio.FONT, text="UP/DN=CYCLE  OK=FLASH", color=DIMGRAY, scale=1)
-    hint.x = 20; hint.y = 128
-    g.append(hint)
+        txt = ("> " if selected else "  ") + name
+        col = CYAN if selected else 0x445566
+        lbl = label.Label(terminalio.FONT, text=txt, color=col, scale=2)
+        lbl.x = 20; lbl.y = 32 + i * 24
+        g.append(lbl)
     display.root_group = g
+    print(f"[display] Nav overlay: {_current_mode}")
 
 def set_mode(mode):
     global _current_mode
