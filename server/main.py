@@ -1,5 +1,6 @@
 # server/main.py
 import os, asyncio, json
+from pathlib import Path
 from datetime import datetime, timezone
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
@@ -94,14 +95,17 @@ app.add_middleware(CORSMiddleware,
     allow_origins=["*"], allow_methods=["*"], allow_headers=["*"]
 )
 
+_BASE = Path(__file__).parent.parent
+_CLIENT = _BASE / "client"
+
 app.include_router(boxes.router)
 app.include_router(categories.router)
 
-app.mount("/client", StaticFiles(directory="client"), name="client")
+app.mount("/client", StaticFiles(directory=str(_CLIENT)), name="client")
 
 @app.get("/")
 def root():
-    return FileResponse("client/index.html")
+    return FileResponse(str(_CLIENT / "index.html"))
 
 @app.get("/health")
 def health():

@@ -873,6 +873,10 @@ function renderBoxes() {
     return;
   }
 
+  // Clear empty state if present
+  const emptyEl = grid.querySelector('.empty-state');
+  if (emptyEl) emptyEl.remove();
+
   // Keyed update — preserve existing cards
   const existing = {};
   grid.querySelectorAll('.box-card').forEach(el => {
@@ -885,7 +889,7 @@ function renderBoxes() {
     const el = existing[box.box_id];
     const html = boxCardHTML(box);
     if (el) {
-      el.outerHTML = html; // replace in place
+      el.outerHTML = html;
     } else {
       grid.insertAdjacentHTML('beforeend', html);
     }
@@ -895,11 +899,6 @@ function renderBoxes() {
   Object.keys(existing).forEach(id => {
     if (!seen.has(id)) existing[id].remove();
   });
-
-  // Rebuild if needed
-  if (!grid.querySelector('.box-card')) {
-    grid.innerHTML = _boxes.map(boxCardHTML).join('');
-  }
 }
 
 function boxCardHTML(box) {
