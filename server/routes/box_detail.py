@@ -137,6 +137,9 @@ async def box_page(box_id: str, db=Depends(get_db)):
 <body>
 
 <div class="header">
+  <a href="/" style="display:inline-flex;align-items:center;gap:6px;color:#00d4ff;font-size:11px;letter-spacing:2px;text-decoration:none;margin-bottom:10px;opacity:0.7;">
+    &#x2190; RACK
+  </a>
   <div class="box-id">{box_id}</div>
   <div class="box-name">{name}</div>
   <div class="category">{category}</div>

@@ -98,22 +98,84 @@ def handle_button(event):
         _nav_active = not _nav_active
         _nav_timeout = time.monotonic() + 10
         set_pixel(AMBER if _nav_active else GREEN)
+        if _nav_active:
+            _render_nav_overlay()
         return
     if _nav_active:
         idx = _MODE_ORDER.index(_current_mode)
         if event == "UP_PRESS":
             idx = (idx - 1) % len(_MODE_ORDER)
+            _current_mode = _MODE_ORDER[idx]
+            _render_nav_overlay()
         elif event == "DOWN_PRESS":
             idx = (idx + 1) % len(_MODE_ORDER)
+            _current_mode = _MODE_ORDER[idx]
+            _render_nav_overlay()
         elif event == "OK_PRESS":
             _nav_active = False
             set_pixel(GREEN)
-            return
-        _current_mode = _MODE_ORDER[idx]
-        print(f"[display] Mode  {_current_mode}")
+            print(f"[display] Mode selected: {_current_mode}")
+        elif event == "UP_HOLD":
+            # Hold UP = exit nav without changing
+            _nav_active = False
+            set_pixel(GREEN)
+        return
     if _nav_active and time.monotonic() > _nav_timeout:
         _nav_active = False
         set_pixel(GREEN)
+
+def nav_active():
+    return _nav_active
+
+def _render_nav_overlay():
+    """Full-screen mode picker shown during nav mode."""
+    _LABELS = {
+        MODE_TOOLBOX: ("TOOLBOX", "Status & QR"),
+        MODE_CLOCK:   ("CLOCK",   "Time & Date"),
+        MODE_WEATHER: ("WEATHER", "Conditions"),
+        MODE_BATTERY: ("BATTERY", "Power stats"),
+    }
+    g = displayio.Group()
+    # Dark background
+    bm = displayio.Bitmap(240, 135, 1)
+    pal = displayio.Palette(1); pal[0] = 0x08090C
+    g.append(displayio.TileGrid(bm, pixel_shader=pal))
+    # Header
+    hdr = label.Label(terminalio.FONT, text="SELECT MODE", color=AMBER, scale=1)
+    hdr.x = 76; hdr.y = 8
+    g.append(hdr)
+    # Divider
+    div_bm = displayio.Bitmap(240, 1, 1)
+    div_pal = displayio.Palette(1); div_pal[0] = AMBER
+    g.append(displayio.TileGrid(div_bm, pixel_shader=div_pal, x=0, y=16))
+    # Mode list
+    for i, mode in enumerate(_MODE_ORDER):
+        selected = (mode == _current_mode)
+        y = 26 + i * 26
+        if selected:
+            # Highlight bar
+            sel_bm = displayio.Bitmap(240, 22, 1)
+            sel_pal = displayio.Palette(1); sel_pal[0] = 0x001A2A
+            g.append(displayio.TileGrid(sel_bm, pixel_shader=sel_pal, x=0, y=y - 4))
+            # Cyan left bar
+            bar_bm = displayio.Bitmap(3, 22, 1)
+            bar_pal = displayio.Palette(1); bar_pal[0] = CYAN
+            g.append(displayio.TileGrid(bar_bm, pixel_shader=bar_pal, x=0, y=y - 4))
+            arrow = label.Label(terminalio.FONT, text=">", color=CYAN, scale=1)
+            arrow.x = 6; arrow.y = y + 2
+            g.append(arrow)
+        name, sub = _LABELS.get(mode, (mode, ""))
+        name_lbl = label.Label(terminalio.FONT, text=name, color=CYAN if selected else WHITE, scale=1)
+        name_lbl.x = 18; name_lbl.y = y
+        g.append(name_lbl)
+        sub_lbl = label.Label(terminalio.FONT, text=sub, color=0x445566, scale=1)
+        sub_lbl.x = 18; sub_lbl.y = y + 11
+        g.append(sub_lbl)
+    # Footer hint
+    hint = label.Label(terminalio.FONT, text="UP/DN=SCROLL  OK=SELECT", color=DIMGRAY, scale=1)
+    hint.x = 10; hint.y = 128
+    g.append(hint)
+    display.root_group = g
 
 def set_mode(mode):
     global _current_mode

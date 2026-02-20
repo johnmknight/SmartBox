@@ -113,6 +113,8 @@ while True:
             elif intr == display.INTERRUPT_LOCKDOWN:   lockdown.render()
             elif intr == display.INTERRUPT_SELF_DESTRUCT:
                 if self_destruct.render(): display.clear_interrupt()
+        elif display.nav_active():
+            pass  # nav overlay is drawn directly by handle_button
         else:
             mode = display.current_mode()
             if mode == display.MODE_TOOLBOX:  mode_toolbox.render(state_machine.current())
