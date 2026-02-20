@@ -1,4 +1,4 @@
-# modes/mode_weather.py — Weather pushed from server via MQTT
+# modes/mode_weather.py - Weather pushed from server via MQTT
 import displayio, terminalio, time
 from adafruit_display_text import label
 import display, settings
@@ -9,7 +9,7 @@ _updated_at = 0
 def update(payload):
     global _weather, _updated_at
     _weather = payload; _updated_at = time.monotonic()
-    print(f"[weather] {payload.get('condition','?')} {payload.get('temp','?')}°")
+    print(f"[weather] {payload.get('condition','')} {payload.get('temp','')}")
 
 def render():
     g = displayio.Group()
@@ -28,12 +28,12 @@ def render():
         if loc:
             ll=label.Label(terminalio.FONT,text=loc,color=0x666666,scale=1)
             ll.x=240-len(loc)*6-8; ll.y=12; g.append(ll)
-        ts=f"{temp}°{unit}"
+        ts=f"{temp}{unit}"
         tl=label.Label(terminalio.FONT,text=ts,color=0xFFFFFF,scale=4)
         tl.x=10; tl.y=60; g.append(tl)
         cl=label.Label(terminalio.FONT,text=cond,color=0xAAAAAA,scale=1)
         cl.x=140; cl.y=45; g.append(cl)
-        dl=label.Label(terminalio.FONT,text=f"Feels {feels}°  Humidity {humid}%",color=0x666666,scale=1)
+        dl=label.Label(terminalio.FONT,text=f"Feels {feels}  Humidity {humid}%",color=0x666666,scale=1)
         dl.x=8; dl.y=100; g.append(dl)
         if time.monotonic()-_updated_at > 3600:
             sl=label.Label(terminalio.FONT,text="STALE",color=0xFF4444,scale=1)

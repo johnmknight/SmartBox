@@ -36,7 +36,7 @@ def render():
     dl = label.Label(terminalio.FONT, text=ds, color=0xAAAAAA, scale=1)
     dl.x=(240-len(ds)*6)//2; dl.y=100; g.append(dl)
 
-    nl = label.Label(terminalio.FONT, text="NTP ●" if _ntp_synced else "NTP ○",
+    nl = label.Label(terminalio.FONT, text="NTP " if _ntp_synced else "NTP ",
                      color=0x00FF80 if _ntp_synced else 0x555555, scale=1)
     nl.x=190; nl.y=122; g.append(nl)
 

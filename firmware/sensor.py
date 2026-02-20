@@ -26,7 +26,7 @@ def init():
         return False
     try:
         i2c = board.STEMMA_I2C()
-        _sensor = adafruit_vcnl4020.VCNL4020(i2c)
+        _sensor = adafruit_vcnl4020.Adafruit_VCNL4020(i2c)
         print(f"[sensor] VCNL4020 ready (threshold={settings.prox_threshold()})")
         return True
     except Exception as e:

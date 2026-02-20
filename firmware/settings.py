@@ -29,7 +29,7 @@ def _defaults():
     return {
         "box_id": "box-unknown",
         "rack_id": "rack-01",
-        "display_name": "Box ?",
+        "display_name": "Box ",
         "wifi_ssid": "",
         "wifi_pass": "",
         "server_url": "",
@@ -49,7 +49,7 @@ def _defaults():
 
 def box_id():         return get("box_id", "box-unknown")
 def rack_id():        return get("rack_id", "rack-01")
-def display_name():   return get("display_name", "Box ?")
+def display_name():   return get("display_name", "Box ")
 def server_url():     return get("server_url", "")
 def use_mqtt():       return get("use_mqtt", False)
 def use_marchog():    return get("use_marchog", False)

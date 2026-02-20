@@ -1,4 +1,4 @@
-# modes/mode_toolbox.py — Main status display
+# modes/mode_toolbox.py - Main status display
 import displayio, terminalio, time
 from adafruit_display_text import label
 import display, power, mqtt_client, settings
@@ -23,16 +23,16 @@ def render(state):
     div_bm=displayio.Bitmap(224,1,1); div_pal=displayio.Palette(1); div_pal[0]=0x333333
     g.append(displayio.TileGrid(div_bm,pixel_shader=div_pal,x=8,y=22))
 
-    cat = _category if len(_category)<=18 else _category[:17]+"…"
+    cat = _category if len(_category)<=18 else _category[:17]+"..."
     c = label.Label(terminalio.FONT, text=cat, color=0xFFFFFF, scale=2)
     c.x=max(8,(240-len(cat)*12)//2); c.y=65; g.append(c)
 
     pct = power.battery_percent()
-    bt = f"{'⚡' if power.is_charging() else ''}{pct:.0f}%" if pct>=0 else "---"
+    bt = f"{'' if power.is_charging() else ''}{pct:.0f}%" if pct>=0 else "---"
     bl = label.Label(terminalio.FONT, text=bt, color=0x00FF80 if pct>20 else 0xFF4444, scale=1)
     bl.x=8; bl.y=122; g.append(bl)
 
-    ms = "MQTT ●" if mqtt_client.is_connected() else "MQTT ○"
+    ms = "MQTT " if mqtt_client.is_connected() else "MQTT "
     mc = 0x00D4FF if mqtt_client.is_connected() else 0x555555
     ml = label.Label(terminalio.FONT, text=ms, color=mc, scale=1)
     ml.x=170; ml.y=122; g.append(ml)

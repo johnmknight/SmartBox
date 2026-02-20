@@ -1,4 +1,4 @@
-# mqtt_client.py — SmartToolbox MQTT wrapper
+# mqtt_client.py - SmartToolbox MQTT wrapper
 # Required: circup install adafruit_minimqtt
 
 import time, json, settings
@@ -114,7 +114,7 @@ def _on_disconnect(client, userdata, rc):
     global _connected; _connected = False; print(f"[mqtt] Disconnected (rc={rc})")
 
 def _on_message(client, topic, message):
-    print(f"[mqtt] ← {topic}: {message}")
+    print(f"[mqtt]  {topic}: {message}")
     handler = _handlers.get(topic)
     if handler:
         try: handler(topic, json.loads(message))

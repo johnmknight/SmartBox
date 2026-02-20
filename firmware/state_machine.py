@@ -50,7 +50,7 @@ def poll():
         _current_state  = _pending_state
         _state_since    = now
         _pending_state  = None
-        print(f"[state] {_previous_state} → {_current_state}")
+        print(f"[state] {_previous_state}  {_current_state}")
         for cb in _on_change_callbacks:
             try:
                 cb(_current_state, _previous_state)

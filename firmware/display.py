@@ -8,6 +8,7 @@ import time
 import displayio
 import terminalio
 import neopixel
+from fourwire import FourWire
 from digitalio import DigitalInOut, Direction, Pull
 from adafruit_display_text import label
 import settings
@@ -19,7 +20,7 @@ tft_dc  = board.TFT_DC
 tft_rst = board.TFT_RESET
 tft_bl  = board.TFT_BACKLIGHT
 spi     = board.SPI()
-display_bus = displayio.FourWire(spi, command=tft_dc, chip_select=tft_cs, reset=tft_rst)
+display_bus = FourWire(spi, command=tft_dc, chip_select=tft_cs, reset=tft_rst)
 
 from adafruit_st7789 import ST7789
 display = ST7789(display_bus, rotation=270, width=240, height=135, rowstart=40, colstart=53)
@@ -109,7 +110,7 @@ def handle_button(event):
             set_pixel(GREEN)
             return
         _current_mode = _MODE_ORDER[idx]
-        print(f"[display] Mode → {_current_mode}")
+        print(f"[display] Mode  {_current_mode}")
     if _nav_active and time.monotonic() > _nav_timeout:
         _nav_active = False
         set_pixel(GREEN)
@@ -125,7 +126,7 @@ def current_mode():
 def set_interrupt(interrupt_type):
     global _current_interrupt
     _current_interrupt = interrupt_type
-    print(f"[display] Interrupt → {interrupt_type}")
+    print(f"[display] Interrupt  {interrupt_type}")
     colors = {INTERRUPT_RED_ALERT: RED, INTERRUPT_LOCKDOWN: AMBER, INTERRUPT_SELF_DESTRUCT: RED}
     set_pixel(colors.get(interrupt_type, WHITE), brightness=1.0)
 

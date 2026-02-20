@@ -1,4 +1,4 @@
-# code.py — SmartToolbox main entry point (CircuitPython)
+# code.py - SmartToolbox main entry point (CircuitPython)
 # Install libs first: circup install adafruit_minimqtt adafruit_vcnl4020
 #   adafruit_max1704x adafruit_st7789 adafruit_display_text adafruit_ntp neopixel
 
@@ -98,7 +98,9 @@ while True:
 
     usb_event = power.poll_usb_change()
     if usb_event:
-        mqtt_client.publish_debug({"event": f"usb_{usb_event}", **power.debug_payload()})
+        _usb_payload = {"event": f"usb_{usb_event}"}
+        _usb_payload.update(power.debug_payload())
+        mqtt_client.publish_debug(_usb_payload)
 
     for event in display.poll_buttons():
         display.handle_button(event)
@@ -124,11 +126,13 @@ while True:
 
     if settings.debug() and now - _last_debug >= _DEBUG_INTERVAL:
         _last_debug = now
-        mqtt_client.publish_debug({
-            **state_machine.debug_payload(), **sensor.debug_payload(), **power.debug_payload(),
-            "wifi_rssi": wifi.radio.ap_info.rssi if wifi_ok else None,
-            "mqtt_connected": mqtt_client.is_connected(),
-            "mode": display.current_mode(),
-        })
+        _dbg = {}
+        _dbg.update(state_machine.debug_payload())
+        _dbg.update(sensor.debug_payload())
+        _dbg.update(power.debug_payload())
+        _dbg["wifi_rssi"] = wifi.radio.ap_info.rssi if wifi_ok else None
+        _dbg["mqtt_connected"] = mqtt_client.is_connected()
+        _dbg["mode"] = display.current_mode()
+        mqtt_client.publish_debug(_dbg)
 
     time.sleep(0.05)

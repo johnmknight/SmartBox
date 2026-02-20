@@ -3,13 +3,13 @@
   "rack_id": "rack-01",
   "display_name": "Box 1",
 
-  "wifi_ssid": "yournetwork",
-  "wifi_pass": "yourpassword",
+  "wifi_ssid": "DSN1",
+  "wifi_pass": "JebMun42",
 
-  "server_url": "http://192.168.1.50:8091",
+  "server_url": "http://192.168.4.47:8091",
 
   "use_mqtt": true,
-  "mqtt_broker": "192.168.1.50",
+  "mqtt_broker": "192.168.4.47",
   "mqtt_port": 1883,
   "mqtt_user": "",
   "mqtt_pass": "",
@@ -19,7 +19,7 @@
   "proximity_threshold": 50,
   "proximity_samples": 5,
 
-  "timezone_offset": -5,
+  "timezone_offset": -4,
   "display_brightness": 1.0,
 
   "weather_unit": "F",
