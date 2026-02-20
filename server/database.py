@@ -29,6 +29,7 @@ async def init_db():
                 last_seen   TEXT,
                 inventory   TEXT DEFAULT '',
                 photo_path  TEXT,
+                zone        TEXT DEFAULT '',
                 created_at  TEXT DEFAULT (datetime('now'))
             )
         """)
@@ -51,7 +52,11 @@ async def init_db():
             )
         """)
         # Migrate existing DBs
-        for col, defn in [("inventory", "TEXT DEFAULT ''"), ("photo_path", "TEXT")]:
+        for col, defn in [
+            ("inventory",    "TEXT DEFAULT ''"),
+            ("photo_path",   "TEXT"),
+            ("zone",         "TEXT DEFAULT ''"),
+        ]:
             try:
                 await db.execute(f"ALTER TABLE boxes ADD COLUMN {col} {defn}")
             except Exception:

@@ -3,6 +3,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from server.database import get_db
 from server.models.box import BoxCommand
 from server.mqtt import listener
+from pydantic import BaseModel
+from typing import Optional
 import json
 from datetime import datetime, timezone
 
@@ -21,6 +23,24 @@ async def get_box(box_id: str, db=Depends(get_db)):
     if not row:
         raise HTTPException(404, f"Box {box_id} not found")
     return dict(row)
+
+class BoxPatch(BaseModel):
+    display_name: Optional[str] = None
+    zone: Optional[str] = None
+
+@router.patch("/{box_id}")
+async def patch_box(box_id: str, body: BoxPatch, db=Depends(get_db)):
+    fields, vals = [], []
+    if body.display_name is not None:
+        fields.append("display_name=?"); vals.append(body.display_name)
+    if body.zone is not None:
+        fields.append("zone=?"); vals.append(body.zone)
+    if not fields:
+        raise HTTPException(400, "Nothing to update")
+    vals.append(box_id)
+    await db.execute(f"UPDATE boxes SET {', '.join(fields)} WHERE box_id=?", vals)
+    await db.commit()
+    return {"ok": True}
 
 @router.post("/{box_id}/command")
 async def send_command(box_id: str, cmd: BoxCommand, db=Depends(get_db)):
