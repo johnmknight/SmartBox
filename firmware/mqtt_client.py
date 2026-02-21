@@ -42,6 +42,7 @@ def init(wifi_pool, ssl_context=None):
         password=settings.get("mqtt_pass") or None,
         socket_pool=wifi_pool, ssl_context=ssl_context,
         client_id=f"stb_{_BOX}", keep_alive=60,
+        socket_timeout=0.1,
     )
     _client.on_connect    = _on_connect
     _client.on_disconnect = _on_disconnect

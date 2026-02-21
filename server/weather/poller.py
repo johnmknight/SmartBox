@@ -1,25 +1,22 @@
-import time, json, threading, requests
-import paho.mqtt.client as mqtt
+import time, threading, requests
+from server.mqtt import listener
 
 HA_URL    = "http://192.168.4.51:8123"
 HA_TOKEN  = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJjNmVkYmNkNzJjMjQ0N2M0OWQ4MGU3MTFhOTFjMjQyNyIsImlhdCI6MTc3MTYzNDM2NiwiZXhwIjoyMDg2OTk0MzY2fQ.DoJQLPvw70_RC-Os4FvGrlktErQeRkxyfdJ4QIcZfBI"
 HA_ENTITY = "weather.weather_home"
-INTERVAL  = 600  # seconds
+INTERVAL  = 600
 
-_mqtt_client = None
-_boxes       = []
+_boxes = []
 
-def init(mqtt_broker: str, mqtt_port: int, boxes: list):
-    global _mqtt_client, _boxes
+def init(boxes: list):
+    global _boxes
     _boxes = boxes
-    _mqtt_client = mqtt.Client(client_id="stb_weather_poller")
-    _mqtt_client.connect(mqtt_broker, mqtt_port)
-    _mqtt_client.loop_start()
     t = threading.Thread(target=_poll_loop, daemon=True)
     t.start()
     print(f"[weather] Poller started - pushing to {boxes}")
 
 def _poll_loop():
+    time.sleep(3)  # wait for listener MQTT to connect first
     while True:
         _fetch_and_publish()
         time.sleep(INTERVAL)
@@ -42,10 +39,9 @@ def _fetch_and_publish():
             "wind":       round(attrs.get("wind_speed", 0)),
             "location":   attrs.get("friendly_name", "Home"),
         }
-        msg = json.dumps(payload)
         for box_id in _boxes:
             topic = f"smarttoolbox/{box_id}/weather"
-            _mqtt_client.publish(topic, msg)
+            listener.publish(topic, payload)
             print(f"[weather] -> {topic}: {payload['condition']} {payload['temp']}F")
     except Exception as e:
         print(f"[weather] Fetch error: {e}")
