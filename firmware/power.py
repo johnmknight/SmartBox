@@ -1,4 +1,4 @@
-# power.py - MAX17048 battery monitor + USB detection
+# power.py - USB detection + optional MAX17048 battery monitor
 # Required: circup install adafruit_max1704x
 
 import board, supervisor
@@ -7,7 +7,6 @@ try:
     import adafruit_max1704x
     _LIB = True
 except ImportError:
-    print("[power] WARNING: adafruit_max1704x not installed")
     _LIB = False
 
 _gauge = None
@@ -16,25 +15,13 @@ _last_usb = False
 def init():
     global _gauge
     if not _LIB:
-        print("[power] Running without battery gauge")
         return False
     try:
-        i2c = board.STEMMA_I2C()
-        _gauge = adafruit_max1704x.MAX17048(i2c)
+        _gauge = adafruit_max1704x.MAX17048(board.STEMMA_I2C())
         print(f"[power] MAX17048 ready - {battery_percent():.0f}%")
         return True
-    except Exception as e:
-        print(f"[power] ERROR: {e}")
-        # Scan I2C to see what's actually there
-        try:
-            i2c = board.STEMMA_I2C()
-            if i2c.try_lock():
-                found = [hex(a) for a in i2c.scan()]
-                i2c.unlock()
-                print(f"[power] I2C scan: {found}")
-        except Exception as se:
-            print(f"[power] I2C scan failed: {se}")
-        _gauge = None
+    except Exception:
+        print("[power] No battery monitor found - running without")
         return False
 
 def usb_connected():   return supervisor.runtime.usb_connected
