@@ -94,7 +94,9 @@ async def lifespan(app: FastAPI):
     listener.set_db_updater(handle_mqtt)
     loop = asyncio.get_event_loop()
     listener.start(loop)
-    weather_poller.init(["box-01"])
+    mqtt_broker = os.getenv("MQTT_BROKER", "192.168.4.47")
+    mqtt_port   = int(os.getenv("MQTT_PORT", 1883))
+    weather_poller.init(mqtt_broker, mqtt_port, ["box-01"])
     yield
 
 app = FastAPI(title="SmartToolbox Server", version="1.0.0", lifespan=lifespan)
