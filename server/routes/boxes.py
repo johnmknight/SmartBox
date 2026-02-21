@@ -54,6 +54,12 @@ async def send_command(box_id: str, cmd: BoxCommand, db=Depends(get_db)):
         await db.commit()
     return {"ok": True, "box_id": box_id, "command": cmd.action}
 
+@router.post("/{box_id}/weather")
+async def push_weather(box_id: str, payload: dict):
+    """Push weather data to a specific box via MQTT (testing)."""
+    listener.publish(f"smarttoolbox/{box_id}/weather", payload)
+    return {"ok": True, "box_id": box_id}
+
 @router.get("/{box_id}/events")
 async def get_events(box_id: str, limit: int = 50, db=Depends(get_db)):
     async with db.execute(

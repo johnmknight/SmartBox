@@ -13,13 +13,19 @@
 - [x] code.py (main loop)
 - [x] mode_toolbox.py
 - [x] mode_clock.py (+ NTP sync)
-- [x] mode_weather.py (server-pushed)
+- [x] mode_weather.py (server-pushed, 3-col layout, Tabler icon spritesheet)
 - [x] mode_battery.py
 - [x] red_alert.py (Marchog interrupt)
 - [x] lockdown.py (Marchog interrupt)
 - [x] self_destruct.py (Marchog countdown)
+- [x] Weather icon pipeline (build_weather_sprites.py → BMP spritesheet)
+- [x] Per-box event commands (event_red_alert etc via command topic)
+- [x] Server testing page (/testing) — event triggers, mode switch, weather push
+- [x] Dashboard nav (Dashboard | Testing tabs)
 
 ### NEXT UP 🔜
+- [ ] Red Alert animation rework — center split effect (see docs/INTERRUPT_DESIGN_NOTES.md)
+- [ ] Self Destruct — increase header text to scale=2
 - [ ] Flash firmware to first Feather and test boot sequence
 - [ ] Calibrate proximity_threshold with VCNL4020 mounted
 - [ ] Test USB connect/disconnect state transitions

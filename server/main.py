@@ -119,6 +119,10 @@ app.mount("/client", StaticFiles(directory=str(_CLIENT)), name="client")
 def root():
     return FileResponse(str(_CLIENT / "index.html"))
 
+@app.get("/testing")
+def testing_page():
+    return FileResponse(str(_CLIENT / "testing.html"))
+
 @app.get("/health")
 def health():
     return {"status": "ok"}

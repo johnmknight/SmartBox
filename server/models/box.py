@@ -16,7 +16,7 @@ class BoxState(BaseModel):
     last_seen: Optional[str] = None
 
 class BoxCommand(BaseModel):
-    action: str  # identify | set_category | set_mode | reboot
+    action: str  # identify | set_category | set_mode | reboot | event_red_alert | event_lockdown | event_self_destruct | event_all_clear
     category: Optional[str] = None
     mode: Optional[str] = None
     countdown: Optional[int] = None

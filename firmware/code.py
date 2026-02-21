@@ -15,6 +15,9 @@ display.init()
 sensor.init()
 power.init()
 
+import weather_icons
+weather_icons.load()
+
 def connect_wifi():
     ssid = settings.get("wifi_ssid")
     pwd  = settings.get("wifi_pass")
@@ -48,6 +51,15 @@ def handle_command(topic, p):
         display.set_mode(p.get("mode", "TOOLBOX"))
     elif action == "reboot":
         import microcontroller; microcontroller.reset()
+    # Event actions (same as Marchog broadcasts, but per-box via command topic)
+    elif action == "event_red_alert":
+        handle_red_alert(topic, p)
+    elif action == "event_lockdown":
+        handle_lockdown(topic, p)
+    elif action == "event_self_destruct":
+        handle_self_destruct(topic, p)
+    elif action == "event_all_clear":
+        handle_all_clear(topic, p)
 
 def handle_weather(topic, p):   mode_weather.update(p)
 

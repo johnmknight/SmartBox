@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SMARTTOOLBOX — TESTING</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+:root {
+  --bg: #080c10; --bg2: #0d1117; --bg3: #111820;
+  --border: #1a2535; --border2: #243040;
+  --cyan: #00d4ff; --cyan-dim: #00d4ff33;
+  --amber: #f59e0b; --green: #00ff80; --red: #ff4444;
+  --text: #c8d8e8; --text-dim: #556677; --text-mid: #8899aa;
+  --mono: 'Space Mono', monospace; --sans: 'IBM Plex Sans', sans-serif;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 14px; min-height: 100vh; }
+body::before { content: ''; position: fixed; inset: 0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 4px);
+  pointer-events: none; z-index: 1000; }
+</style>
+</head>
+<body>
+<style>header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 28px; border-bottom: 1px solid var(--border); background: var(--bg2);
+}
+.header-left { display: flex; align-items: center; gap: 20px; }
+.logo { font-family: var(--mono); font-size: 15px; font-weight: 700; letter-spacing: 0.2em; color: var(--cyan); }
+.logo span { color: var(--amber); }
+.logo a { color: inherit; text-decoration: none; }
+.header-divider { width: 1px; height: 28px; background: var(--border2); }
+.nav-links { display: flex; gap: 16px; }
+.nav-links a { font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em;
+  color: var(--text-dim); text-decoration: none; text-transform: uppercase; padding: 4px 0;
+  border-bottom: 2px solid transparent; transition: all 0.2s; }
+.nav-links a:hover { color: var(--text); }
+.nav-links a.active { color: var(--cyan); border-bottom-color: var(--cyan); }
+
+.container { max-width: 900px; margin: 0 auto; padding: 32px 28px; }
+
+.panel { background: var(--bg2); border: 1px solid var(--border); border-radius: 4px; padding: 24px; margin-bottom: 24px; }
+.panel-title { font-family: var(--mono); font-size: 11px; letter-spacing: 0.15em;
+  color: var(--text-dim); text-transform: uppercase; margin-bottom: 16px;
+  padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+
+.target-row { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }
+.target-row label { font-family: var(--mono); font-size: 11px; color: var(--text-dim);
+  letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap; }
+.target-select { flex: 1; background: var(--bg3); border: 1px solid var(--border2);
+  color: var(--text); font-family: var(--mono); font-size: 13px; padding: 10px 14px;
+  border-radius: 3px; outline: none; cursor: pointer; }
+.target-select:focus { border-color: var(--cyan); }
+
+.btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.event-btn { font-family: var(--mono); font-size: 12px; letter-spacing: 0.1em;
+  text-transform: uppercase; padding: 16px; border-radius: 4px; cursor: pointer;
+  border: 2px solid; transition: all 0.2s; display: flex; flex-direction: column;
+  align-items: center; gap: 6px; }
+.event-btn:hover { transform: translateY(-1px); }
+.event-btn:active { transform: translateY(0); }
+.event-btn .label { font-size: 13px; font-weight: 700; }
+.event-btn .sub { font-size: 9px; opacity: 0.6; letter-spacing: 0.08em; font-weight: 400; }
+
+.btn-red { background: #ff444420; border-color: var(--red); color: var(--red); }
+.btn-red:hover { background: #ff444440; box-shadow: 0 0 20px #ff444433; }
+.btn-amber { background: #f59e0b20; border-color: var(--amber); color: var(--amber); }
+.btn-amber:hover { background: #f59e0b40; box-shadow: 0 0 20px #f59e0b33; }
+.btn-destruct { background: #ff000020; border-color: #ff0000; color: #ff0000; }
+.btn-destruct:hover { background: #ff000040; box-shadow: 0 0 20px #ff000044; }
+.btn-green { background: #00ff8020; border-color: var(--green); color: var(--green); }
+.btn-green:hover { background: #00ff8040; box-shadow: 0 0 20px #00ff8033; }
+
+.countdown-row { display: flex; align-items: center; gap: 10px; margin-top: 8px; justify-content: center; }
+.countdown-input { width: 60px; background: var(--bg3); border: 1px solid var(--border2);
+  color: var(--text); font-family: var(--mono); font-size: 13px; padding: 6px 8px;
+  border-radius: 3px; text-align: center; outline: none; }
+.countdown-input:focus { border-color: var(--cyan); }
+.countdown-label { font-size: 10px; color: var(--text-dim); font-family: var(--mono); letter-spacing: 0.1em; }
+
+.mode-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.mode-btn { font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em;
+  text-transform: uppercase; padding: 12px 8px; border-radius: 3px; cursor: pointer;
+  border: 1px solid var(--border2); background: var(--bg3); color: var(--text-mid);
+  transition: all 0.2s; text-align: center; }
+.mode-btn:hover { border-color: var(--cyan); color: var(--cyan); background: var(--cyan-dim); }
+
+.weather-form { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+.weather-form .field { display: flex; flex-direction: column; gap: 4px; }
+.weather-form label { font-family: var(--mono); font-size: 9px; letter-spacing: 0.1em;
+  color: var(--text-dim); text-transform: uppercase; }
+.weather-form input, .weather-form select { background: var(--bg3); border: 1px solid var(--border2);
+  color: var(--text); font-family: var(--mono); font-size: 12px; padding: 8px 10px;
+  border-radius: 3px; outline: none; }
+.weather-form input:focus, .weather-form select:focus { border-color: var(--cyan); }
+.weather-push-btn { grid-column: span 3; margin-top: 6px; font-family: var(--mono); font-size: 11px;
+  letter-spacing: 0.1em; text-transform: uppercase; padding: 10px; border-radius: 3px;
+  cursor: pointer; border: 1px solid var(--cyan); background: var(--cyan-dim); color: var(--cyan);
+  transition: all 0.2s; }
+.weather-push-btn:hover { background: var(--cyan); color: var(--bg); }
+
+.log { max-height: 200px; overflow-y: auto; }
+.log-entry { font-family: var(--mono); font-size: 11px; padding: 6px 0;
+  border-bottom: 1px solid var(--border); display: flex; gap: 12px; }
+.log-time { color: var(--text-dim); white-space: nowrap; }
+.log-box { color: var(--cyan); white-space: nowrap; }
+.log-msg { color: var(--text); }
+
+.toast { position: fixed; bottom: 24px; right: 24px; background: var(--bg2);
+  border: 1px solid var(--border2); border-left: 3px solid var(--cyan);
+  padding: 12px 18px; border-radius: 3px; font-family: var(--mono); font-size: 11px;
+  color: var(--text); z-index: 600; transform: translateY(80px); opacity: 0; transition: all 0.3s; }
+.toast.show { transform: translateY(0); opacity: 1; }
+</style>
+
+<header>
+  <div class="header-left">
+    <div class="logo"><a href="/">SMART<span>TOOLBOX</span></a></div>
+    <div class="header-divider"></div>
+    <div class="nav-links">
+      <a href="/">Dashboard</a>
+      <a href="/testing" class="active">Testing</a>
+    </div>
+  </div>
+</header>
+<div class="container">
+
+  <!-- Target Box Selector -->
+  <div class="panel">
+    <div class="panel-title">Target</div>
+    <div class="target-row">
+      <label>Box</label>
+      <select class="target-select" id="box-select">
+        <option value="">Loading boxes...</option>
+      </select>
+      <label style="margin-left:12px;">or</label>
+      <button class="event-btn btn-green" style="padding:10px 20px;flex:0;"
+        onclick="sendToAll()">All Boxes</button>
+    </div>
+  </div>
+
+  <!-- Events -->
+  <div class="panel">
+    <div class="panel-title">Marchog Events</div>
+    <div class="btn-grid">
+      <button class="event-btn btn-red" onclick="sendEvent('event_red_alert')">
+        <span class="label">Red Alert</span>
+        <span class="sub">Pulsing red background + LED</span>
+      </button>
+      <button class="event-btn btn-amber" onclick="sendEvent('event_lockdown')">
+        <span class="label">Lockdown</span>
+        <span class="sub">Amber static display</span>
+      </button>
+      <button class="event-btn btn-destruct" onclick="sendEvent('event_self_destruct')">
+        <span class="label">Self Destruct</span>
+        <div class="countdown-row">
+          <input type="number" class="countdown-input" id="countdown" value="30" min="5" max="300">
+          <span class="countdown-label">SEC</span>
+        </div>
+      </button>
+      <button class="event-btn btn-green" onclick="sendEvent('event_all_clear')">
+        <span class="label">All Clear</span>
+        <span class="sub">Dismiss active event</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Display Modes -->
+  <div class="panel">
+    <div class="panel-title">Display Mode</div>
+    <div class="mode-grid">
+      <button class="mode-btn" onclick="sendMode('TOOLBOX')">Toolbox</button>
+      <button class="mode-btn" onclick="sendMode('CLOCK')">Clock</button>
+      <button class="mode-btn" onclick="sendMode('WEATHER')">Weather</button>
+      <button class="mode-btn" onclick="sendMode('BATTERY')">Battery</button>
+    </div>
+  </div>
+  <!-- Weather Test -->
+  <div class="panel">
+    <div class="panel-title">Push Weather Data</div>
+    <div class="weather-form">
+      <div class="field">
+        <label>Condition</label>
+        <select id="wx-condition">
+          <option>sunny</option><option>clear-night</option>
+          <option>partlycloudy</option><option>cloudy</option><option>fog</option>
+          <option>rainy</option><option>pouring</option><option>snowy</option>
+          <option>lightning</option><option>lightning-rainy</option>
+          <option>windy</option><option>hail</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Temp</label>
+        <input type="number" id="wx-temp" value="72">
+      </div>
+      <div class="field">
+        <label>Feels Like</label>
+        <input type="number" id="wx-feels" value="68">
+      </div>
+      <div class="field">
+        <label>Humidity %</label>
+        <input type="number" id="wx-humidity" value="65">
+      </div>
+      <div class="field">
+        <label>Wind</label>
+        <input type="number" id="wx-wind" value="8">
+      </div>
+      <div class="field">
+        <label>Location</label>
+        <input type="text" id="wx-location" value="Home">
+      </div>
+      <button class="weather-push-btn" onclick="pushWeather()">Push Weather</button>
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="panel">
+    <div class="panel-title">Quick Actions</div>
+    <div class="mode-grid">
+      <button class="mode-btn" onclick="sendCmd('identify')">Identify</button>
+      <button class="mode-btn" onclick="sendCmd('reboot')" style="border-color:var(--red);color:var(--red);">Reboot</button>
+    </div>
+  </div>
+
+  <!-- Log -->
+  <div class="panel">
+    <div class="panel-title">Command Log</div>
+    <div class="log" id="log">
+      <div class="log-entry"><span class="log-msg" style="color:var(--text-dim)">Ready</span></div>
+    </div>
+  </div>
+
+</div>
+<div class="toast" id="toast"></div>
+<script>
+let _boxes = [];
+
+async function loadBoxes() {
+  try {
+    const r = await fetch('/api/boxes/');
+    _boxes = await r.json();
+    const sel = document.getElementById('box-select');
+    sel.innerHTML = _boxes.map(b =>
+      `<option value="${b.box_id}">${b.box_id} — ${b.display_name || 'unnamed'}</option>`
+    ).join('');
+  } catch(e) { console.error(e); }
+}
+
+function getTarget() {
+  return document.getElementById('box-select').value;
+}
+
+async function sendCmd(action, extra={}) {
+  const boxId = getTarget();
+  if (!boxId) { toast('Select a box'); return; }
+  const body = { action, ...extra };
+  try {
+    const r = await fetch(`/api/boxes/${boxId}/command`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(body)
+    });
+    if (r.ok) {
+      log(boxId, `${action} ${JSON.stringify(extra)}`);
+      toast(`${action} → ${boxId}`);
+    } else {
+      toast(`Failed: ${r.status}`, true);
+    }
+  } catch(e) { toast('Error: ' + e.message, true); }
+}
+
+function sendEvent(action) {
+  const extra = {};
+  if (action === 'event_self_destruct') {
+    extra.countdown = parseInt(document.getElementById('countdown').value) || 30;
+  }
+  sendCmd(action, extra);
+}
+
+function sendMode(mode) { sendCmd('set_mode', { mode }); }
+
+async function sendToAll() {
+  for (const box of _boxes) {
+    const sel = document.getElementById('box-select');
+    sel.value = box.box_id;
+  }
+  toast('Use box selector — broadcast coming soon');
+}
+
+async function pushWeather() {
+  const boxId = getTarget();
+  if (!boxId) { toast('Select a box'); return; }
+  const payload = {
+    condition: document.getElementById('wx-condition').value,
+    temp: parseInt(document.getElementById('wx-temp').value),
+    feels_like: parseInt(document.getElementById('wx-feels').value),
+    humidity: parseInt(document.getElementById('wx-humidity').value),
+    wind: parseInt(document.getElementById('wx-wind').value),
+    location: document.getElementById('wx-location').value,
+  };
+  try {
+    const r = await fetch(`/api/boxes/${boxId}/weather`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    if (r.ok) {
+      log(boxId, `weather: ${payload.condition} ${payload.temp}°`);
+      toast(`Weather → ${boxId}`);
+    }
+  } catch(e) { toast('Error: ' + e.message, true); }
+}
+
+function log(boxId, msg) {
+  const el = document.getElementById('log');
+  const now = new Date().toTimeString().slice(0,8);
+  const entry = document.createElement('div');
+  entry.className = 'log-entry';
+  entry.innerHTML = `<span class="log-time">${now}</span><span class="log-box">${boxId}</span><span class="log-msg">${msg}</span>`;
+  el.prepend(entry);
+  if (el.children.length > 50) el.lastChild.remove();
+}
+
+let _toastTimer;
+function toast(msg, err=false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.borderLeftColor = err ? 'var(--amber)' : 'var(--cyan)';
+  t.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+loadBoxes();
+</script>
+</body>
+</html>
