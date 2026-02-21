@@ -34,6 +34,14 @@
 - [ ] .env.example + install.sh
 - [ ] docs/FIRMWARE_SETUP.md
 
+### BLOCKED ⏸
+- [ ] MAX17048 battery monitor — possible hardware defect on current board
+  - Root cause: `displayio.release_displays()` drops `TFT_I2C_POWER`, killing power to I2C bus + MAX17048
+  - Fix applied: re-enable `TFT_I2C_POWER` in display.py after release, 100ms settle delay
+  - Still failing — I2C scan returns [] even with pin manually driven HIGH from REPL
+  - Likely hardware issue on this unit; new board on order
+  - When new board arrives: run bare REPL scan first to confirm MAX17048 at 0x36 before loading firmware
+
 ### KNOWN ISSUES / TO VERIFY
 - [ ] VCNL4020 I2C address conflict check (0x13) — no conflict since each box has its own Feather
 - [ ] supervisor.runtime.usb_connected reliability on ESP32-S3
