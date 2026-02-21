@@ -92,6 +92,7 @@ _last_render  = 0;  _RENDER_INTERVAL  = 0.5
 print("[main] Entering main loop")
 
 while True:
+  try:
     now = time.monotonic()
     state_machine.poll()
     mqtt_client.poll()
@@ -138,3 +139,5 @@ while True:
         mqtt_client.publish_debug(_dbg)
 
     time.sleep(0.05)
+  except KeyboardInterrupt:
+    pass

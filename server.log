@@ -1,0 +1,15 @@
+[db] Database initialized
+[mqtt-listener] Connecting to 192.168.4.47:1883...
+[weather] Poller started -> ['box-01']
+[mqtt-listener] Connected to 192.168.4.47:1883
+[mqtt-listener] Subscribed to smarttoolbox/#
+[weather] -> smarttoolbox/box-01/weather: clear-night 70F
+INFO:     127.0.0.1:57317 - "GET /api/boxes/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57317 - "GET /api/boxes/box-01/inventory HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56638 - "GET /api/categories/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49488 - "GET /api/boxes/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49488 - "GET /api/categories/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49488 - "GET /api/boxes/box-01/inventory HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56906 - "GET /api/categories/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58847 - "GET /api/boxes/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58847 - "GET /api/boxes/box-01/inventory HTTP/1.1" 200 OK
