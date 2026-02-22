@@ -22,10 +22,11 @@
 - [x] Per-box event commands (event_red_alert etc via command topic)
 - [x] Server testing page (/testing) — event triggers, mode switch, weather push
 - [x] Dashboard nav (Dashboard | Testing tabs)
+- [x] Red Alert — Wrath of Khan style (chevron brackets, converging scan line animation)
+- [x] Self Destruct — header text scale=2
+- [x] Fast render interval (80ms) during interrupts
 
 ### NEXT UP 🔜
-- [ ] Red Alert animation rework — center split effect (see docs/INTERRUPT_DESIGN_NOTES.md)
-- [ ] Self Destruct — increase header text to scale=2
 - [ ] Flash firmware to first Feather and test boot sequence
 - [ ] Calibrate proximity_threshold with VCNL4020 mounted
 - [ ] Test USB connect/disconnect state transitions
