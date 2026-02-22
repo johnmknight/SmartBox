@@ -64,6 +64,7 @@ def handle_command(topic, p):
 def handle_weather(topic, p):   mode_weather.update(p)
 
 def handle_red_alert(topic, p):
+    red_alert.reset()
     display.set_interrupt(display.INTERRUPT_RED_ALERT)
     mqtt_client.publish_ack("red-alert")
 
@@ -100,6 +101,7 @@ state_machine.init()
 _last_battery = 0;  _BATTERY_INTERVAL = 60
 _last_debug   = 0;  _DEBUG_INTERVAL   = 10
 _last_render  = 0;  _RENDER_INTERVAL  = 0.5
+_RENDER_INTERVAL_FAST = 0.08  # ~12fps for interrupt animations
 
 print("[main] Entering main loop")
 
@@ -118,7 +120,8 @@ while True:
     for event in display.poll_buttons():
         display.handle_button(event)
 
-    if now - _last_render >= _RENDER_INTERVAL:
+    _interval = _RENDER_INTERVAL_FAST if display.is_interrupted() else _RENDER_INTERVAL
+    if now - _last_render >= _interval:
         _last_render = now
         if display.is_interrupted():
             intr = display._current_interrupt

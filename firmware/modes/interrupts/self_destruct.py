@@ -26,8 +26,8 @@ def render():
     g=displayio.Group()
     bm=displayio.Bitmap(240,135,1); pal=displayio.Palette(1); pal[0]=bg
     g.append(displayio.TileGrid(bm,pixel_shader=pal))
-    hl=label.Label(terminalio.FONT,text="SELF DESTRUCT",color=0xFF4400,scale=1)
-    hl.x=(240-13*6)//2; hl.y=15; g.append(hl)
+    hl=label.Label(terminalio.FONT,text="SELF DESTRUCT",color=0xFF4400,scale=2)
+    hl.x=(240-13*12)//2; hl.y=15; g.append(hl)
     cs=f"{int(remaining):02d}"
     cl=label.Label(terminalio.FONT,text=cs,color=color,scale=5)
     cl.x=(240-len(cs)*30)//2; cl.y=65; g.append(cl)
