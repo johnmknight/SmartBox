@@ -25,19 +25,29 @@
 - [x] Red Alert — Wrath of Khan style (chevron brackets, converging scan line animation)
 - [x] Self Destruct — header text scale=2
 - [x] Fast render interval (80ms) during interrupts
+- [x] Server scaffold (FastAPI + SQLite) + web dashboard (rack view, sort by rack/category)
+- [x] Category management API + seeded category list (18 categories with colors)
+- [x] Rack manager UI (racks.html) — create/assign boxes, graphical rack view
+- [x] Label generator (labels.html) — Plain/NASA/Hazard/Cargo templates, 3"×2" PNG export
+- [x] NASA label — large meatball (84px), tall info-band (96px), stacked box-id + cat-badge
+- [x] QR code fix — all boxes encode full URL (http://host/box/{id}), not bare box_id
+- [x] /box/{id} mobile page — full NASA theme (stripe, meatball, Barlow Condensed name, orange CTA)
+- [x] /box/{id} — battery badge hidden for passive boxes
+- [x] Category badge font doubled on all label templates (Plain, NASA, Cargo)
+- [x] Passive box treatment — battery bar + smart buttons hidden in dashboard and detail page
+- [x] box_detail.py — category badge font doubled on mobile detail page
 
 ### NEXT UP 🔜
 - [ ] Flash firmware to first Feather and test boot sequence
 - [ ] Calibrate proximity_threshold with VCNL4020 mounted
 - [ ] Test USB connect/disconnect state transitions
 - [ ] Test button navigation between modes
-- [ ] Server scaffold (FastAPI + SQLite)
 - [ ] MQTT broker (embedded Mosquitto)
-- [ ] Web dashboard (rack view)
-- [ ] Category management API + UI
 - [ ] Weather relay (HA or OpenWeatherMap)
 - [ ] HA Discovery publisher
 - [ ] Marchog integration bridge
+- [ ] /box/{id} — inventory display (read-only view of saved manifest)
+- [ ] Label generator — Hazard template category badge (no badge currently)
 - [ ] .env.example + install.sh
 - [ ] docs/FIRMWARE_SETUP.md
 

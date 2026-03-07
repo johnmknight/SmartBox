@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SmartToolbox — Label Generator</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=IBM+Plex+Sans:wght@300;400;600;700&family=Barlow+Condensed:wght@400;600;700;800;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#0a0f1a;--surface:#111827;--border:#1e3a5f;
+  --accent:#00d4ff;--text:#e2e8f0;--muted:#64748b;
+}
+body{
+  background:var(--bg);color:var(--text);
+  font-family:'IBM Plex Sans',sans-serif;
+  min-height:100vh;
+  display:grid;
+  grid-template-columns:300px 1fr;
+  grid-template-rows:52px 1fr;
+}
+/* ── TOPBAR ── */
+.topbar{
+  grid-column:1/-1;background:#080c14;
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 20px;gap:14px;
+}
+.topbar-logo{font-family:'Space Mono',monospace;font-size:.65rem;color:var(--accent);letter-spacing:3px;}
+.topbar-back{
+  font-size:1.1rem;color:var(--muted);text-decoration:none;line-height:1;
+  padding:4px 6px;border-radius:3px;transition:color .15s,background .15s;}
+.topbar-back:hover{color:var(--accent);background:rgba(0,212,255,.08);}
+.topbar-sep{width:1px;height:22px;background:var(--border);}
+.topbar-title{font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;}
+.topbar-right{margin-left:auto;display:flex;gap:8px;}
+.btn{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.78rem;letter-spacing:2px;
+  text-transform:uppercase;border:none;cursor:pointer;padding:7px 14px;border-radius:3px;transition:all .15s;}
+.btn-primary{background:var(--accent);color:#000;}
+.btn-primary:hover{background:#00b8e0;}
+.btn-secondary{background:transparent;border:1px solid var(--border);color:var(--muted);}
+.btn-secondary:hover{border-color:var(--accent);color:var(--accent);}
+/* ── SIDEBAR ── */
+.sidebar{
+  background:var(--surface);border-right:1px solid var(--border);
+  padding:16px;overflow-y:auto;display:flex;flex-direction:column;gap:14px;
+}
+.sec-label{font-size:.58rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;
+  color:var(--accent);margin-bottom:5px;padding-bottom:3px;border-bottom:1px solid var(--border);}
+.field-group{display:flex;flex-direction:column;gap:7px;}
+label{font-size:.62rem;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:1px;display:block;}
+input[type="text"],textarea,select{
+  width:100%;background:#0d1520;border:1px solid var(--border);
+  color:var(--text);font-family:'IBM Plex Sans',sans-serif;font-size:.82rem;
+  padding:6px 9px;border-radius:3px;outline:none;transition:border-color .2s;}
+input[type="text"]:focus,textarea:focus,select:focus{border-color:var(--accent);}
+textarea{resize:vertical;min-height:48px;}
+.tpl-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;}
+.tpl-btn{
+  border:2px solid var(--border);background:#0d1520;color:var(--muted);
+  cursor:pointer;border-radius:4px;padding:7px 3px;
+  font-family:'Barlow Condensed',sans-serif;font-size:.68rem;font-weight:700;
+  letter-spacing:1px;text-transform:uppercase;text-align:center;transition:all .15s;}
+.tpl-btn:hover{border-color:var(--accent);color:var(--text);}
+.tpl-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(0,212,255,.07);}
+.cat-colors{display:flex;gap:6px;flex-wrap:wrap;}
+.cat-dot{width:22px;height:22px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:border-color .15s;}
+.cat-dot.active{border-color:#fff;}
+.radio-row{display:flex;gap:12px;}
+.radio-row label{display:flex;align-items:center;gap:4px;cursor:pointer;text-transform:none;
+  font-size:.8rem;color:var(--text);}
+/* DB read-only field display */
+.db-field{
+  background:#060b15;border:1px solid #1a2a3a;color:#94a3b8;
+  font-family:'Share Tech Mono',monospace;font-size:.8rem;
+  padding:5px 9px;border-radius:3px;letter-spacing:.5px;
+  min-height:28px;}
+/* ── MAIN PANEL ── */
+.main{background:#070b12;display:flex;flex-direction:column;align-items:center;
+  padding:24px 20px;gap:18px;overflow-y:auto;}
+.preview-title{font-family:'Space Mono',monospace;font-size:.58rem;letter-spacing:4px;
+  text-transform:uppercase;color:var(--muted);align-self:flex-start;}
+/*
+ * LABEL SHELL — 576×384px = 3"×2" at 192dpi (2× screen preview)
+ * At this scale: 1pt print = 2.67px
+ * Minimum readable name at arm's length (24") = 24pt → 64px = 4rem
+ * TARGET name size: 36–48pt → 96–128px = 6–8rem  ← THIS IS THE RULE
+ */
+.label{width:576px;height:384px;position:relative;overflow:hidden;flex-shrink:0;
+  box-shadow:0 8px 40px rgba(0,0,0,.7);
+  padding:24px;/* 1/8" safe zone on all sides */}
+
+/* ══════════════════════════════════════════════════════
+   PLAIN — white, functional, bold hierarchy
+   Structure: 8px stripe | 38px info-band | BODY (name huge + meta) | QR right | 28px footer
+   ══════════════════════════════════════════════════════ */
+.label.tpl-plain{background:#fff;border:2px solid #111;}
+
+.tpl-plain .stripe{height:8px;}
+.tpl-plain .info-band{
+  height:38px;background:#111;display:flex;align-items:center;
+  justify-content:space-between;padding:0 14px;}
+.tpl-plain .box-id{
+  font-family:'Share Tech Mono',monospace;font-size:.9rem;color:#fff;letter-spacing:3px;}
+.tpl-plain .cat-badge{
+  font-size:1.16rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;
+  padding:2px 8px;border-radius:2px;color:#111;}
+
+.tpl-plain .body{
+  display:flex;gap:0;
+  height:calc(384px - 48px - 8px - 38px - 28px);/* 262px */
+}
+.tpl-plain .text-col{
+  flex:1;padding:14px 14px 10px 14px;
+  display:flex;flex-direction:column;justify-content:space-between;}
+
+/* THE NAME — 7.5rem = ~200px = ~75pt at this scale = ~28pt actual print */
+/* That's readable at 18–24 inches, which is arm's length to a shelf */
+.tpl-plain .name{
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:7.5rem;font-weight:900;
+  color:#111;line-height:.88;
+  text-transform:uppercase;letter-spacing:-2px;
+  word-break:break-word;overflow:hidden;
+  max-height:160px;
+}
+.tpl-plain .bottom-row{display:flex;flex-direction:column;gap:4px;}
+.tpl-plain .meta{display:flex;gap:20px;}
+.tpl-plain .meta-item{display:flex;flex-direction:column;}
+.tpl-plain .meta-key{font-size:.55rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#aaa;}
+.tpl-plain .meta-val{font-size:.85rem;font-weight:700;color:#111;line-height:1.1;}
+.tpl-plain .contents{font-size:.62rem;color:#888;line-height:1.4;
+  border-top:1px solid #e8e8e8;padding-top:5px;margin-top:3px;}
+
+.tpl-plain .qr-col{
+  width:220px;flex-shrink:0;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:6px;padding:12px 14px;}
+.tpl-plain .qr-label{font-size:.48rem;color:#ccc;letter-spacing:1px;text-transform:uppercase;}
+
+.tpl-plain .footer{
+  position:absolute;bottom:0;left:0;right:0;height:28px;
+  background:#f0f0f0;border-top:1px solid #ddd;
+  display:flex;align-items:center;padding:0 14px;justify-content:space-between;}
+.tpl-plain .footer span{font-size:.5rem;color:#bbb;letter-spacing:1px;font-family:'Share Tech Mono',monospace;}
+/* ══════════════════════════════════════════════════════
+   NASA — dark mission-control, same hierarchy discipline
+   ══════════════════════════════════════════════════════ */
+.label.tpl-nasa{background:#09111f;border:2px solid #1e3a5f;display:none;}
+
+.tpl-nasa .stripe{height:8px;background:#e36b00;}
+.tpl-nasa .info-band{
+  height:96px;background:#060b15;border-bottom:1px solid #1e3a5f;
+  display:flex;align-items:center;padding:0 14px;gap:12px;}
+.tpl-nasa .nasa-meatball{
+  height:84px;width:84px;flex-shrink:0;display:block;}
+.tpl-nasa .box-id{
+  font-family:'Share Tech Mono',monospace;font-size:1.1rem;color:#00d4ff;letter-spacing:3px;}
+.tpl-nasa .cat-badge{
+  font-size:1.1rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;
+  color:#e36b00;border:1px solid #e36b00;padding:2px 8px;border-radius:2px;}
+
+.tpl-nasa .body{display:flex;height:calc(384px - 48px - 8px - 96px - 28px);}
+.tpl-nasa .text-col{flex:1;padding:12px 12px 10px 14px;display:flex;flex-direction:column;justify-content:space-between;}
+.tpl-nasa .name{
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:7rem;font-weight:900;
+  color:#ffffff;line-height:.88;
+  text-transform:uppercase;letter-spacing:-2px;
+  word-break:break-word;overflow:hidden;max-height:155px;}
+.tpl-nasa .bottom-row{display:flex;flex-direction:column;gap:4px;}
+.tpl-nasa .meta{display:flex;gap:16px;}
+.tpl-nasa .meta-item{display:flex;flex-direction:column;}
+.tpl-nasa .meta-key{font-size:.5rem;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#334155;}
+.tpl-nasa .meta-val{font-size:.82rem;font-weight:700;color:#00d4ff;letter-spacing:.5px;}
+.tpl-nasa .contents{font-size:.58rem;color:#334155;line-height:1.4;
+  border-top:1px solid #1e3a5f;padding-top:5px;margin-top:3px;}
+.tpl-nasa .qr-col{
+  width:220px;flex-shrink:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:6px;padding:10px 14px;}
+.tpl-nasa .qr-label{font-size:.45rem;color:#334155;letter-spacing:2px;text-transform:uppercase;text-align:center;}
+.tpl-nasa .footer{
+  position:absolute;bottom:0;left:0;right:0;height:28px;background:#060b15;
+  border-top:1px solid #1e3a5f;display:flex;align-items:center;padding:0 12px;justify-content:space-between;}
+.tpl-nasa .footer span{font-size:.45rem;color:#1e3a5f;letter-spacing:2px;font-family:'Share Tech Mono',monospace;}
+.dot{width:6px;height:6px;border-radius:50%;background:#00ff9d;box-shadow:0 0 5px #00ff9d;animation:blink 2s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+/* ══════════════════════════════════════════════════════
+   HAZARD — maximum contrast, safety-grade visibility
+   ══════════════════════════════════════════════════════ */
+.label.tpl-hazard{background:#fff;border:3px solid #111;display:none;}
+
+/* Diagonal stripe band — classic hazard pattern */
+.tpl-hazard .haz-stripe{
+  height:56px;
+  background:repeating-linear-gradient(
+    -45deg,#1a1a1a 0,#1a1a1a 12px,#f5c400 12px,#f5c400 24px);
+  display:flex;align-items:center;justify-content:center;gap:10px;}
+.tpl-hazard .haz-icon{font-size:1.8rem;line-height:1;}
+.tpl-hazard .haz-type{
+  font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:900;
+  letter-spacing:4px;text-transform:uppercase;color:#fff;
+  text-shadow:0 1px 3px rgba(0,0,0,.8);}
+
+.tpl-hazard .body{
+  display:flex;height:calc(384px - 48px - 56px - 24px);}
+.tpl-hazard .text-col{flex:1;padding:12px 12px 10px 16px;display:flex;flex-direction:column;justify-content:space-between;}
+.tpl-hazard .name{
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:7rem;font-weight:900;
+  color:#111;line-height:.88;
+  text-transform:uppercase;letter-spacing:-2px;
+  word-break:break-word;overflow:hidden;max-height:155px;}
+.tpl-hazard .bottom-row{display:flex;flex-direction:column;gap:4px;}
+.tpl-hazard .meta{display:flex;gap:20px;}
+.tpl-hazard .meta-item{display:flex;flex-direction:column;}
+.tpl-hazard .meta-key{font-size:.52rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#aaa;}
+.tpl-hazard .meta-val{font-size:.82rem;font-weight:700;color:#111;}
+.tpl-hazard .contents{font-size:.58rem;color:#888;line-height:1.4;
+  border-top:1px solid #e0e0e0;padding-top:4px;margin-top:3px;}
+.tpl-hazard .qr-col{
+  width:220px;flex-shrink:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:6px;padding:10px 14px;}
+.tpl-hazard .qr-label{font-size:.45rem;color:#ccc;letter-spacing:1px;text-transform:uppercase;}
+.tpl-hazard .footer{
+  position:absolute;bottom:0;left:0;right:0;height:24px;
+  background:#f5c400;display:flex;align-items:center;padding:0 14px;justify-content:space-between;}
+.tpl-hazard .footer span{font-size:.52rem;font-weight:700;color:#1a1a1a;letter-spacing:2px;font-family:'Share Tech Mono',monospace;}
+
+/* ══════════════════════════════════════════════════════
+   CARGO — ultra-minimal, maximum name dominance
+   One big identifier. Everything else whispers.
+   ══════════════════════════════════════════════════════ */
+.label.tpl-cargo{background:#fff;border:1px solid #ddd;display:none;}
+
+.tpl-cargo .body{
+  display:flex;height:calc(384px - 48px - 32px);}
+.tpl-cargo .text-col{flex:1;padding:16px 14px 12px 18px;display:flex;flex-direction:column;justify-content:space-between;}
+.tpl-cargo .box-id-tiny{
+  font-family:'Share Tech Mono',monospace;font-size:.62rem;color:#bbb;letter-spacing:3px;}
+.tpl-cargo .name{
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:8rem;font-weight:900;
+  color:#111;line-height:.85;
+  text-transform:uppercase;letter-spacing:-3px;
+  word-break:break-word;overflow:hidden;max-height:170px;}
+.tpl-cargo .cat-pill{
+  display:inline-block;font-size:1.2rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;
+  padding:3px 10px;border-radius:20px;color:#fff;margin-top:6px;align-self:flex-start;}
+.tpl-cargo .loc{font-size:.72rem;font-weight:600;color:#999;letter-spacing:.5px;margin-top:3px;}
+.tpl-cargo .contents{font-size:.6rem;color:#bbb;line-height:1.4;margin-top:auto;}
+.tpl-cargo .qr-col{
+  width:220px;flex-shrink:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:6px;padding:16px 14px 44px;}
+.tpl-cargo .qr-label{font-size:.45rem;color:#ddd;letter-spacing:1px;text-transform:uppercase;}
+.tpl-cargo .footer{
+  position:absolute;bottom:0;left:0;right:0;height:32px;
+  background:#fafafa;border-top:1px solid #efefef;
+  display:flex;align-items:center;padding:0 18px;justify-content:space-between;}
+.tpl-cargo .footer span{font-size:.5rem;color:#ccc;letter-spacing:1px;font-family:'Share Tech Mono',monospace;}
+</style>
+</head>
+<body>
+<!-- TOPBAR -->
+<div class="topbar">
+  <a href="/client/index.html" class="topbar-back" title="Back to Dashboard">&#8592;</a>
+  <div class="topbar-sep"></div>
+  <span class="topbar-logo">SMARTTOOLBOX</span>
+  <div class="topbar-sep"></div>
+  <span class="topbar-title">Label Generator</span>
+  <div class="topbar-right">
+    <button class="btn btn-secondary" onclick="exportPNG()">Export PNG</button>
+  </div>
+</div>
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+
+  <!-- STEP 1: SELECT BOX FROM DB -->
+  <div class="field-group">
+    <div class="sec-label">① Select Box</div>
+    <select id="box-select" onchange="loadBox(this.value)">
+      <option value="">— loading boxes… —</option>
+    </select>
+    <div id="box-no-select" style="font-size:.65rem;color:var(--muted);display:none;">
+      No boxes found. Add boxes via the dashboard first.
+    </div>
+  </div>
+
+  <!-- DB FIELDS — read-only, populated on box select -->
+  <div class="field-group" id="db-fields" style="opacity:.35;pointer-events:none;">
+    <div class="sec-label">From Database</div>
+    <label>Box ID</label>
+    <div class="db-field" id="disp-id">—</div>
+    <label>Display Name</label>
+    <div class="db-field" id="disp-name">—</div>
+    <label>Category</label>
+    <div class="db-field" id="disp-cat">—</div>
+    <label>Zone</label>
+    <div class="db-field" id="disp-zone">—</div>
+    <label>Rack / Shelf</label>
+    <div class="db-field" id="disp-rack">—</div>
+    <label>Box Type</label>
+    <div class="db-field" id="disp-type">—</div>
+  </div>
+
+  <!-- STEP 2: TEMPLATE -->
+  <div class="field-group" id="tpl-section" style="opacity:.35;pointer-events:none;">
+    <div class="sec-label">② Template</div>
+    <div class="tpl-grid">
+      <button class="tpl-btn active" onclick="setTemplate('plain',this)">Plain</button>
+      <button class="tpl-btn" onclick="setTemplate('nasa',this)">NASA</button>
+      <button class="tpl-btn" onclick="setTemplate('hazard',this)">Hazard</button>
+      <button class="tpl-btn" onclick="setTemplate('cargo',this)">Cargo</button>
+    </div>
+  </div>
+
+  <!-- STEP 3: PRINT OPTIONS (not in DB) -->
+  <div class="field-group" id="print-opts" style="opacity:.35;pointer-events:none;">
+    <div class="sec-label">③ Print Options</div>
+    <label>Contents <span style="font-size:.55rem;color:#475569;text-transform:none;letter-spacing:0">(not in DB — optional)</span></label>
+    <textarea id="inp-contents" oninput="updateLabel()" placeholder="e.g. 1/4&quot; drive sockets, extensions…"></textarea>
+    <label>Category Color</label>
+    <div class="cat-colors" id="cat-colors">
+      <div class="cat-dot active" style="background:#e53e3e" onclick="setColor('#e53e3e',this)"></div>
+      <div class="cat-dot" style="background:#dd6b20" onclick="setColor('#dd6b20',this)"></div>
+      <div class="cat-dot" style="background:#d69e2e" onclick="setColor('#d69e2e',this)"></div>
+      <div class="cat-dot" style="background:#38a169" onclick="setColor('#38a169',this)"></div>
+      <div class="cat-dot" style="background:#3182ce" onclick="setColor('#3182ce',this)"></div>
+      <div class="cat-dot" style="background:#805ad5" onclick="setColor('#805ad5',this)"></div>
+      <div class="cat-dot" style="background:#d53f8c" onclick="setColor('#d53f8c',this)"></div>
+      <div class="cat-dot" style="background:#2d3748" onclick="setColor('#2d3748',this)"></div>
+    </div>
+    <label>QR URL Override</label>
+    <input type="text" id="inp-qrurl" placeholder="Auto-generated" oninput="updateLabel()">
+  </div>
+
+</div>
+<!-- MAIN / PREVIEW -->
+<div class="main">
+  <span class="preview-title">// LABEL PREVIEW — 576×384PX (3"×2" @192DPI)</span>
+
+  <!-- PLAIN -->
+  <div class="label tpl-plain" id="label-plain">
+    <div class="stripe" id="pp-stripe"></div>
+    <div class="info-band">
+      <span class="box-id" id="pp-id"></span>
+      <span class="cat-badge" id="pp-cat"></span>
+    </div>
+    <div class="body">
+      <div class="text-col">
+        <div class="name" id="pp-name"></div>
+        <div class="bottom-row">
+          <div class="meta">
+            <div class="meta-item"><span class="meta-key">Zone</span><span class="meta-val" id="pp-zone"></span></div>
+            <div class="meta-item"><span class="meta-key">Rack</span><span class="meta-val" id="pp-rack"></span></div>
+          </div>
+          <div class="contents" id="pp-contents"></div>
+        </div>
+      </div>
+      <div class="qr-col">
+        <div id="qr-plain"></div>
+        <span class="qr-label">SCAN</span>
+      </div>
+    </div>
+    <div class="footer">
+      <span id="pp-footer-id"></span>
+      <span>SMARTTOOLBOX</span>
+    </div>
+  </div>
+
+  <!-- NASA -->
+  <div class="label tpl-nasa" id="label-nasa">
+    <div class="stripe"></div>
+    <div class="info-band">
+      <img class="nasa-meatball" src="assets/nasa-meatball.svg" alt="NASA">
+      <div style="display:flex;flex-direction:column;gap:6px;flex:1;">
+        <span class="box-id" id="np-id"></span>
+        <span class="cat-badge" id="np-cat" style="align-self:flex-start;"></span>
+      </div>
+    </div>
+    <div class="body">
+      <div class="text-col">
+        <div class="name" id="np-name"></div>
+        <div class="bottom-row">
+          <div class="meta">
+            <div class="meta-item"><span class="meta-key">Zone</span><span class="meta-val" id="np-zone"></span></div>
+            <div class="meta-item"><span class="meta-key">Rack</span><span class="meta-val" id="np-rack"></span></div>
+          </div>
+          <div class="contents" id="np-contents"></div>
+        </div>
+      </div>
+      <div class="qr-col">
+        <div id="qr-nasa"></div>
+        <span class="qr-label">SCAN</span>
+      </div>
+    </div>
+    <div class="footer">
+      <span id="np-footer-id"></span>
+    </div>
+  </div>
+
+  <!-- HAZARD -->
+  <div class="label tpl-hazard" id="label-hazard">
+    <div class="haz-stripe">
+      <span class="haz-icon">⚠</span>
+      <span class="haz-type" id="hp-type">HAZARD</span>
+    </div>
+    <div class="body">
+      <div class="text-col">
+        <div class="name" id="hp-name"></div>
+        <div class="bottom-row">
+          <div class="meta">
+            <div class="meta-item"><span class="meta-key">Zone</span><span class="meta-val" id="hp-zone"></span></div>
+            <div class="meta-item"><span class="meta-key">Rack</span><span class="meta-val" id="hp-rack"></span></div>
+          </div>
+          <div class="contents" id="hp-contents"></div>
+        </div>
+      </div>
+      <div class="qr-col">
+        <div id="qr-hazard"></div>
+        <span class="qr-label">SCAN</span>
+      </div>
+    </div>
+    <div class="footer">
+      <span id="hp-footer-id"></span><span>SMARTTOOLBOX</span>
+    </div>
+  </div>
+
+  <!-- CARGO -->
+  <div class="label tpl-cargo" id="label-cargo">
+    <div class="body">
+      <div class="text-col">
+        <span class="box-id-tiny" id="cp-id"></span>
+        <div class="name" id="cp-name"></div>
+        <span class="cat-pill" id="cp-cat"></span>
+        <span class="loc" id="cp-loc"></span>
+        <div class="contents" id="cp-contents"></div>
+      </div>
+      <div class="qr-col">
+        <div id="qr-cargo"></div>
+        <span class="qr-label">SCAN</span>
+      </div>
+    </div>
+    <div class="footer">
+      <span id="cp-footer-id"></span><span>SMARTTOOLBOX</span>
+    </div>
+  </div>
+
+</div><!-- /main -->
+<script>
+let catColor = '#e53e3e';
+let currentTemplate = 'plain';
+let currentBox = null; // holds the selected box object from DB
+
+// ── DB LOAD ──────────────────────────────────────────────
+async function loadBoxList() {
+  try {
+    const res = await fetch('/api/boxes/');
+    const boxes = await res.json();
+    const sel = document.getElementById('box-select');
+    sel.innerHTML = '<option value="">— select a box —</option>';
+    if (!boxes.length) {
+      document.getElementById('box-no-select').style.display = 'block';
+      return;
+    }
+    boxes.forEach(b => {
+      const opt = document.createElement('option');
+      opt.value = b.box_id;
+      opt.textContent = b.box_id + (b.display_name ? ' — ' + b.display_name : '');
+      sel.appendChild(opt);
+    });
+  } catch(e) {
+    const sel = document.getElementById('box-select');
+    sel.innerHTML = '<option value="">— API unavailable —</option>';
+  }
+}
+
+async function loadBox(boxId) {
+  if (!boxId) {
+    currentBox = null;
+    document.getElementById('db-fields').style.cssText = 'opacity:.35;pointer-events:none;';
+    document.getElementById('tpl-section').style.cssText = 'opacity:.35;pointer-events:none;';
+    document.getElementById('print-opts').style.cssText = 'opacity:.35;pointer-events:none;';
+    return;
+  }
+  try {
+    const res = await fetch('/api/boxes/' + boxId);
+    currentBox = await res.json();
+    // Populate read-only display fields
+    setDisp('disp-id',   currentBox.box_id   || '—');
+    setDisp('disp-name', currentBox.display_name || '—');
+    setDisp('disp-cat',  currentBox.category  || '—');
+    setDisp('disp-zone', currentBox.zone      || '—');
+    setDisp('disp-rack', currentBox.rack_id   || '—');
+    setDisp('disp-type', currentBox.state === 'connected' ? 'Connected' : 'Passive');
+    // Unlock sections
+    document.getElementById('db-fields').style.cssText = '';
+    document.getElementById('tpl-section').style.cssText = '';
+    document.getElementById('print-opts').style.cssText = '';
+    updateLabel();
+  } catch(e) {
+    alert('Could not load box: ' + boxId);
+  }
+}
+
+function setDisp(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = val;
+}
+
+// ── TEMPLATE / COLOR ─────────────────────────────────────
+function setTemplate(t, btn) {
+  currentTemplate = t;
+  document.querySelectorAll('.tpl-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.label').forEach(l => l.style.display = 'none');
+  document.getElementById('label-' + t).style.display = 'block';
+  updateLabel();
+}
+
+function setColor(c, dot) {
+  catColor = c;
+  document.querySelectorAll('.cat-dot').forEach(d => d.classList.remove('active'));
+  dot.classList.add('active');
+  updateLabel();
+}
+
+// ── QR URL ───────────────────────────────────────────────
+function getQRUrl() {
+  const override = document.getElementById('inp-qrurl').value.trim();
+  if (override) return override;
+  if (!currentBox) return 'http://192.168.4.47:8091/box/STB-000';
+  return 'http://192.168.4.47:8091/box/' + currentBox.box_id;
+}
+
+function makeQR(elId, url, dark) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  el.innerHTML = '';
+  try {
+    new QRCode(el, {
+      text: url || 'STB-000',
+      width: 192,
+      height: 192,
+      colorDark: dark ? '#ffffff' : '#111111',
+      colorLight: dark ? '#09111f' : '#ffffff',
+      correctLevel: QRCode.CorrectLevel.M
+    });
+  } catch(e) {}
+}
+
+// ── UPDATE LABEL ─────────────────────────────────────────
+function updateLabel() {
+  if (!currentBox) return; // nothing selected yet
+
+  const id       = currentBox.box_id       || 'STB-000';
+  const name     = currentBox.display_name || 'BOX';
+  const cat      = currentBox.category     || 'TOOLS';
+  const zone     = currentBox.zone         || '—';
+  const rack     = currentBox.rack_id      || '—';
+  const contents = document.getElementById('inp-contents').value || '';
+  const qrUrl    = getQRUrl();
+
+  // ── PLAIN ──
+  const pp_s = document.getElementById('pp-stripe');
+  if (pp_s) pp_s.style.background = catColor;
+  const pp_c = document.getElementById('pp-cat');
+  if (pp_c) { pp_c.textContent = cat; pp_c.style.background = catColor; }
+  setText('pp-id', id);
+  setText('pp-name', name);
+  setText('pp-zone', zone);
+  setText('pp-rack', rack);
+  setText('pp-contents', contents);
+  setText('pp-footer-id', id);
+  makeQR('qr-plain', qrUrl, false);
+
+  // ── NASA ──
+  setText('np-id', id);
+  setText('np-name', name);
+  const np_c = document.getElementById('np-cat');
+  if (np_c) np_c.textContent = cat;
+  setText('np-zone', zone);
+  setText('np-rack', rack);
+  setText('np-contents', contents);
+  setText('np-footer-id', id);
+
+  makeQR('qr-nasa', qrUrl, true);
+
+  // ── HAZARD ──
+  setText('hp-name', name);
+  setText('hp-type', cat);
+  setText('hp-zone', zone);
+  setText('hp-rack', rack);
+  setText('hp-contents', contents);
+  setText('hp-footer-id', id);
+  makeQR('qr-hazard', qrUrl, false);
+
+  // ── CARGO ──
+  setText('cp-id', id);
+  setText('cp-name', name);
+  const cp_c = document.getElementById('cp-cat');
+  if (cp_c) { cp_c.textContent = cat; cp_c.style.background = catColor; }
+  const cp_loc = document.getElementById('cp-loc');
+  if (cp_loc) cp_loc.textContent = zone + ' · ' + rack;
+  setText('cp-contents', contents);
+  setText('cp-footer-id', id);
+  makeQR('qr-cargo', qrUrl, false);
+
+  fitActiveName();
+}
+
+function setText(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = val;
+}
+
+function fitText(el, maxPx, minPx, maxH) {
+  if (!el || el.offsetParent === null) return;
+  el.style.fontSize = maxPx + 'px';
+  if (el.scrollHeight <= maxH) return;
+  let lo = minPx, hi = maxPx, best = minPx;
+  while (hi - lo > 0.5) {
+    const mid = (lo + hi) / 2;
+    el.style.fontSize = mid + 'px';
+    if (el.scrollHeight <= maxH) { best = mid; lo = mid; }
+    else { hi = mid; }
+  }
+  el.style.fontSize = best + 'px';
+}
+
+function fitActiveName() {
+  const fits = {
+    plain:  { id: 'pp-name', max: 120, min: 36, h: 160 },
+    nasa:   { id: 'np-name', max: 112, min: 36, h: 155 },
+    hazard: { id: 'hp-name', max: 112, min: 36, h: 155 },
+    cargo:  { id: 'cp-name', max: 128, min: 36, h: 170 }
+  };
+  const f = fits[currentTemplate];
+  if (f) fitText(document.getElementById(f.id), f.max, f.min, f.h);
+}
+
+function exportPNG() {
+  if (!currentBox) { alert('Select a box first.'); return; }
+  const labelEl = document.getElementById('label-' + currentTemplate);
+  if (!labelEl || typeof html2canvas === 'undefined') {
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+    s.onload = () => doExport(labelEl);
+    document.head.appendChild(s);
+    return;
+  }
+  doExport(labelEl);
+}
+
+function doExport(el) {
+  html2canvas(el, { scale: 4, useCORS: true, backgroundColor: null }).then(canvas => {
+    const a = document.createElement('a');
+    a.download = 'label-' + currentTemplate + '-' + (currentBox?.box_id || 'unknown') + '.png';
+    a.href = canvas.toDataURL('image/png');
+    a.click();
+  });
+}
+
+// Init
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('label-plain').style.display = 'block';
+  document.getElementById('label-nasa').style.display = 'none';
+  document.getElementById('label-hazard').style.display = 'none';
+  document.getElementById('label-cargo').style.display = 'none';
+  loadBoxList();
+});
+</script>
+</body>
+</html>

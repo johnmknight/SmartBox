@@ -73,13 +73,24 @@ async def init_db():
         # Seed default categories
         await db.execute("""
             INSERT OR IGNORE INTO categories (name, color, icon) VALUES
-                ('Unassigned', '#555555', 'question-mark'),
-                ('Hand Tools',  '#F59E0B', 'hammer'),
-                ('Power Tools', '#EF4444', 'bolt'),
-                ('Measuring',   '#00D4FF', 'ruler'),
-                ('Fasteners',   '#00FF80', 'screw'),
-                ('Electrical',  '#A78BFA', 'plug'),
-                ('Safety',      '#FB923C', 'shield')
+                ('Unassigned',               '#555555', 'question-mark'),
+                ('Hand Tools',               '#F59E0B', 'hammer'),
+                ('Power Tools',              '#EF4444', 'bolt'),
+                ('Measuring',                '#00D4FF', 'ruler'),
+                ('Fasteners',                '#00FF80', 'screw'),
+                ('Electrical',               '#A78BFA', 'plug'),
+                ('Safety',                   '#FB923C', 'shield'),
+                ('Art Supplies',             '#e879f9', 'palette'),
+                ('3D Printing',              '#f97316', 'printer'),
+                ('Parts',                    '#64748b', 'components'),
+                ('Tools',                    '#eab308', 'tool'),
+                ('Electronics - Raspberry Pi','#e11d48','cpu'),
+                ('Electronics - Arduino',    '#06b6d4', 'circuit-board'),
+                ('Electronics - Misc',       '#8b5cf6', 'plug'),
+                ('Star Wars',                '#ffe81f', 'star'),
+                ('Space',                    '#38bdf8', 'rocket'),
+                ('Keyboards',               '#34d399', 'keyboard'),
+                ('Tiki',                    '#f59e0b', 'tiki')
         """)
         await db.commit()
         print("[db] Database initialized")

@@ -24,9 +24,32 @@ async def get_box(box_id: str, db=Depends(get_db)):
         raise HTTPException(404, f"Box {box_id} not found")
     return dict(row)
 
+class BoxCreate(BaseModel):
+    box_id: str
+    display_name: Optional[str] = None
+    category: Optional[str] = None
+    rack_id: Optional[str] = None
+    zone: Optional[str] = None
+    state: Optional[str] = 'passive'
+
+@router.post("/")
+async def create_box(body: BoxCreate, db=Depends(get_db)):
+    async with db.execute("SELECT box_id FROM boxes WHERE box_id=?", (body.box_id,)) as cur:
+        if await cur.fetchone():
+            raise HTTPException(409, f"Box {body.box_id} already exists")
+    await db.execute(
+        "INSERT INTO boxes (box_id, display_name, category, rack_id, zone, state) VALUES (?,?,?,?,?,?)",
+        (body.box_id, body.display_name or body.box_id,
+         body.category or 'Unassigned', body.rack_id, body.zone or '', body.state or 'dumb')
+    )
+    await db.commit()
+    return {"ok": True, "box_id": body.box_id}
+
 class BoxPatch(BaseModel):
     display_name: Optional[str] = None
     zone: Optional[str] = None
+    rack_id: Optional[str] = None
+    state: Optional[str] = None
 
 @router.patch("/{box_id}")
 async def patch_box(box_id: str, body: BoxPatch, db=Depends(get_db)):
@@ -35,6 +58,10 @@ async def patch_box(box_id: str, body: BoxPatch, db=Depends(get_db)):
         fields.append("display_name=?"); vals.append(body.display_name)
     if body.zone is not None:
         fields.append("zone=?"); vals.append(body.zone)
+    if body.rack_id is not None:
+        fields.append("rack_id=?"); vals.append(body.rack_id if body.rack_id != '__NONE__' else None)
+    if body.state is not None:
+        fields.append("state=?"); vals.append(body.state)
     if not fields:
         raise HTTPException(400, "Nothing to update")
     vals.append(box_id)

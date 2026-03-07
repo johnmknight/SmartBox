@@ -198,6 +198,76 @@ header {
   letter-spacing: 0.1em;
 }
 
+/* Filter bar */
+.filter-bar {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 8px 0 12px; border-bottom: 1px solid var(--border); margin-bottom: 14px;
+}
+.filter-bar select {
+  background: var(--bg3); border: 1px solid var(--border2); color: var(--text);
+  font-family: var(--mono); font-size: 10px; letter-spacing: .08em;
+  padding: 5px 8px; border-radius: 3px; outline: none; cursor: pointer;
+  text-transform: uppercase;
+}
+.filter-bar select:focus { border-color: var(--cyan); }
+.filter-sep { width: 1px; height: 18px; background: var(--border2); margin: 0 2px; }
+.filter-label { font-family: var(--mono); font-size: 9px; color: var(--text-dim);
+  letter-spacing: .12em; text-transform: uppercase; }
+.filter-clear { font-family: var(--mono); font-size: 9px; color: var(--text-dim);
+  letter-spacing: .1em; text-transform: uppercase; background: none; border: none;
+  cursor: pointer; padding: 4px 8px; border-radius: 3px; margin-left: auto; }
+.filter-clear:hover { color: var(--cyan); background: var(--cyan-dim); }
+.filter-count { font-family: var(--mono); font-size: 9px; color: var(--text-dim);
+  letter-spacing: .1em; }
+
+/* Group headers inside box grid */
+.group-header {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 0 8px 0;
+  margin-top: 8px;
+}
+.group-header:first-child { margin-top: 0; }
+.group-header-accent {
+  width: 3px;
+  height: 28px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.group-header-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.group-header-name {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: var(--text);
+  text-transform: uppercase;
+}
+.group-header-sub {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+.group-header-line {
+  flex: 1;
+  height: 1px;
+  background: var(--border2);
+}
+.group-header-count {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+
 /* Box grid */
 .box-grid {
   display: grid;
@@ -711,6 +781,7 @@ header {
     <div style="display:flex;align-items:center;gap:16px;">
       <a href="/" style="font-family:var(--mono);font-size:11px;letter-spacing:0.1em;color:var(--cyan);text-decoration:none;text-transform:uppercase;border-bottom:2px solid var(--cyan);padding-bottom:2px;">Dashboard</a>
       <a href="/testing" style="font-family:var(--mono);font-size:11px;letter-spacing:0.1em;color:var(--text-dim);text-decoration:none;text-transform:uppercase;padding-bottom:2px;">Testing</a>
+      <a href="/client/labels.html" style="font-family:var(--mono);font-size:11px;letter-spacing:0.1em;color:var(--text-dim);text-decoration:none;text-transform:uppercase;padding-bottom:2px;">Labels</a>
       <div class="header-divider"></div>
       <div class="rack-label" id="rack-label">RACK CONTROL // LOADING...</div>
     </div>
@@ -732,6 +803,26 @@ header {
         <div class="box-count" id="box-count">0 UNITS</div>
         <button class="action-btn" id="edit-rack-btn" onclick="openRackModal()" style="display:none">EDIT RACK</button>
       </div>
+    </div>
+    <div class="filter-bar" id="filter-bar">
+      <span class="filter-label">Filter:</span>
+      <select id="filter-rack" onchange="applyFilters()">
+        <option value="">All Racks</option>
+      </select>
+      <select id="filter-cat" onchange="applyFilters()">
+        <option value="">All Categories</option>
+      </select>
+      <div class="filter-sep"></div>
+      <span class="filter-label">Sort:</span>
+      <select id="sort-by" onchange="applyFilters()">
+        <option value="rack">Rack</option>
+        <option value="name">Name</option>
+        <option value="category">Category</option>
+        <option value="state">State</option>
+        <option value="battery">Battery</option>
+      </select>
+      <span class="filter-count" id="filter-count"></span>
+      <button class="filter-clear" onclick="clearFilters()">✕ CLEAR</button>
     </div>
     <div class="box-grid" id="box-grid">
       <div class="empty-state">
@@ -914,9 +1005,99 @@ function setServerStatus(ok) {
     now.toTimeString().slice(0,8);
 }
 
+// ─── Filter / Sort state ───────────────────────────────────
+let _filterRack = '';
+let _filterCat  = '';
+let _sortBy     = 'rack';
+
+function populateFilterDropdowns() {
+  // Racks
+  const rackSel = document.getElementById('filter-rack');
+  const prevRack = rackSel.value;
+  rackSel.innerHTML = '<option value="">All Racks</option>';
+  const rackIds = [...new Set(_boxes.map(b => b.rack_id).filter(Boolean))].sort();
+  rackIds.forEach(id => {
+    const name = (_racks[id] && _racks[id].display_name) || id;
+    const opt = document.createElement('option');
+    opt.value = id; opt.textContent = name;
+    if (id === prevRack) opt.selected = true;
+    rackSel.appendChild(opt);
+  });
+  // Also add "Unassigned" if any boxes have no rack
+  if (_boxes.some(b => !b.rack_id)) {
+    const opt = document.createElement('option');
+    opt.value = '__none__'; opt.textContent = 'Unassigned';
+    if (prevRack === '__none__') opt.selected = true;
+    rackSel.appendChild(opt);
+  }
+
+  // Categories
+  const catSel = document.getElementById('filter-cat');
+  const prevCat = catSel.value;
+  catSel.innerHTML = '<option value="">All Categories</option>';
+  const cats = [...new Set(_boxes.map(b => b.category).filter(Boolean))].sort();
+  cats.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c; opt.textContent = c;
+    if (c === prevCat) opt.selected = true;
+    catSel.appendChild(opt);
+  });
+}
+
+function applyFilters() {
+  _filterRack = document.getElementById('filter-rack').value;
+  _filterCat  = document.getElementById('filter-cat').value;
+  _sortBy     = document.getElementById('sort-by').value;
+  renderBoxes();
+}
+
+function clearFilters() {
+  document.getElementById('filter-rack').value = '';
+  document.getElementById('filter-cat').value  = '';
+  document.getElementById('sort-by').value     = 'rack';
+  _filterRack = ''; _filterCat = ''; _sortBy = 'rack';
+  renderBoxes();
+}
+
+function getFilteredSortedBoxes() {
+  let boxes = [..._boxes];
+
+  // Filter
+  if (_filterRack === '__none__') {
+    boxes = boxes.filter(b => !b.rack_id);
+  } else if (_filterRack) {
+    boxes = boxes.filter(b => b.rack_id === _filterRack);
+  }
+  if (_filterCat) {
+    boxes = boxes.filter(b => b.category === _filterCat);
+  }
+
+  // Sort
+  const stateOrder = { DOCKED: 0, CONNECTED: 1, AWAY: 2, SET_DOWN: 3, UNKNOWN: 4 };
+  boxes.sort((a, b) => {
+    switch (_sortBy) {
+      case 'name':
+        return (a.display_name || a.box_id).localeCompare(b.display_name || b.box_id);
+      case 'category':
+        return (a.category || '').localeCompare(b.category || '');
+      case 'state':
+        return (stateOrder[a.state] ?? 9) - (stateOrder[b.state] ?? 9);
+      case 'battery':
+        return (b.battery_pct ?? -1) - (a.battery_pct ?? -1);
+      case 'rack':
+      default:
+        const rackA = (a.rack_id || 'zzz') + a.box_id;
+        const rackB = (b.rack_id || 'zzz') + b.box_id;
+        return rackA.localeCompare(rackB);
+    }
+  });
+
+  return boxes;
+}
+
 // ─── Render boxes ──────────────────────────────────────────
 function renderBoxes() {
-  const grid = document.getElementById('box-grid');
+  const grid  = document.getElementById('box-grid');
   const count = document.getElementById('box-count');
   const label = document.getElementById('rack-label');
 
@@ -929,12 +1110,25 @@ function renderBoxes() {
   });
   label.textContent = rackLabels.length ? `RACK: ${rackLabels.join(' / ')}` : 'RACK CONTROL';
 
-  if (!_boxes.length) {
-    grid.innerHTML = `
-      <div class="empty-state">
-        <div class="empty-title">NO BOXES DETECTED</div>
-        <div class="empty-sub">Waiting for Feather units to connect via MQTT</div>
-      </div>`;
+  // Populate dropdowns (preserves selection)
+  populateFilterDropdowns();
+
+  // Get filtered + sorted subset
+  const visible = getFilteredSortedBoxes();
+
+  // Update filter count indicator
+  const countEl = document.getElementById('filter-count');
+  if (countEl) {
+    const isFiltered = _filterRack || _filterCat;
+    countEl.textContent = isFiltered ? `${visible.length} of ${_boxes.length}` : '';
+  }
+
+  if (!visible.length) {
+    grid.innerHTML = _boxes.length
+      ? `<div class="empty-state"><div class="empty-title">NO MATCHES</div>
+          <div class="empty-sub">No boxes match the current filter</div></div>`
+      : `<div class="empty-state"><div class="empty-title">NO BOXES DETECTED</div>
+          <div class="empty-sub">Waiting for Feather units to connect via MQTT</div></div>`;
     return;
   }
 
@@ -942,36 +1136,73 @@ function renderBoxes() {
   const emptyEl = grid.querySelector('.empty-state');
   if (emptyEl) emptyEl.remove();
 
-  // Keyed update — preserve existing cards
-  const existing = {};
-  grid.querySelectorAll('.box-card').forEach(el => {
-    existing[el.dataset.boxId] = el;
-  });
+  // Full re-render in sorted order with optional group headers
+  grid.innerHTML = buildGridHTML(visible);
 
-  const seen = new Set();
-  _boxes.forEach(box => {
-    seen.add(box.box_id);
-    const el = existing[box.box_id];
-    const html = boxCardHTML(box);
-    if (el) {
-      el.outerHTML = html;
-    } else {
-      grid.insertAdjacentHTML('beforeend', html);
-    }
-  });
-
-  // Remove stale cards
-  Object.keys(existing).forEach(id => {
-    if (!seen.has(id)) existing[id].remove();
-  });
-
-  // Show edit rack button when there's exactly one rack (common case)
+  // Show edit rack button
   const rackIds = [...new Set(_boxes.map(b => b.rack_id).filter(Boolean))];
   const editRackBtn = document.getElementById('edit-rack-btn');
   if (editRackBtn) editRackBtn.style.display = rackIds.length ? 'block' : 'none';
 
-  // Fetch inventory counts for all boxes
-  _boxes.forEach(box => fetchInventoryCount(box.box_id));
+  // Fetch inventory counts
+  visible.forEach(box => fetchInventoryCount(box.box_id));
+}
+
+function buildGridHTML(visible) {
+  // Only show group headers when sorted by rack or category
+  if (_sortBy !== 'rack' && _sortBy !== 'category') {
+    return visible.map(box => boxCardHTML(box)).join('');
+  }
+
+  const getKey = box => _sortBy === 'rack'
+    ? (box.rack_id || '__none__')
+    : (box.category || 'Unassigned');
+
+  const html = [];
+  let lastKey = null;
+
+  for (const box of visible) {
+    const key = getKey(box);
+    if (key !== lastKey) {
+      lastKey = key;
+      const count = visible.filter(b => getKey(b) === key).length;
+      html.push(groupHeaderHTML(key, count));
+    }
+    html.push(boxCardHTML(box));
+  }
+  return html.join('');
+}
+
+function groupHeaderHTML(key, count) {
+  if (_sortBy === 'rack') {
+    const rack   = _racks[key];
+    const name   = rack ? (rack.display_name || key) : (key === '__none__' ? 'Unassigned' : key);
+    const sub    = key === '__none__' ? 'no rack assigned' : `// ${key}${rack?.zone ? ' · ' + rack.zone : ''}`;
+    const color  = 'var(--cyan)';
+    return `
+    <div class="group-header">
+      <div class="group-header-accent" style="background:${color};box-shadow:0 0 6px ${color}44;"></div>
+      <div class="group-header-text">
+        <div class="group-header-name">${name}</div>
+        <div class="group-header-sub">${sub}</div>
+      </div>
+      <div class="group-header-line"></div>
+      <div class="group-header-count">${count} BOX${count !== 1 ? 'ES' : ''}</div>
+    </div>`;
+  } else {
+    // category sort
+    const catObj = _categories.find(c => c.name === key);
+    const color  = catObj ? catObj.color : '#555';
+    return `
+    <div class="group-header">
+      <div class="group-header-accent" style="background:${color};box-shadow:0 0 6px ${color}44;"></div>
+      <div class="group-header-text">
+        <div class="group-header-name" style="color:${color};">${key}</div>
+      </div>
+      <div class="group-header-line" style="background:${color}22;"></div>
+      <div class="group-header-count">${count} BOX${count !== 1 ? 'ES' : ''}</div>
+    </div>`;
+  }
 }
 
 function boxCardHTML(box) {
@@ -999,20 +1230,21 @@ function boxCardHTML(box) {
     </div>
     <div class="box-category">${box.category || 'Unassigned'}</div>
     ${box.zone ? `<div style="font-family:var(--mono);font-size:10px;color:var(--amber);margin-bottom:10px;letter-spacing:0.1em;">&#x1F4CD; ${box.zone}</div>` : ''}
+    ${state === 'passive' ? '' : `
     <div class="battery-row">
       <div class="battery-bar-bg">
         <div class="battery-bar-fill" style="width:${pctCap}%;background:${batColor}"></div>
       </div>
       <div class="battery-pct">${batLabel}</div>
-    </div>
+    </div>`}
     <div class="box-inventory" id="inv-${box.box_id}" style="font-family:var(--mono);font-size:9px;color:var(--text-dim);margin-bottom:10px;letter-spacing:0.08em;">INVENTORY: ...</div>
     <div class="box-footer">
       <div class="box-meta">LAST: ${lastSeen}</div>
       <div class="box-actions">
-        <a class="action-btn" href="/box/${box.box_id}" target="_blank" style="text-decoration:none">&#x1F4F1;</a>
+        ${state !== 'passive' ? `<a class="action-btn" href="/box/${box.box_id}" target="_blank" style="text-decoration:none">&#x1F4F1;</a>` : ''}
         <button class="action-btn" onclick="openEditModal('${box.box_id}','${(box.display_name||'').replace(/'/g,"\\'")}','${(box.zone||'').replace(/'/g,"\\'")}')">EDIT</button>
-        <button class="action-btn" onclick="openModal('${box.box_id}')">CMD</button>
-        <button class="action-btn danger" onclick="sendIdentify('${box.box_id}')">ID</button>
+        ${state !== 'passive' ? `<button class="action-btn" onclick="openModal('${box.box_id}')">CMD</button>` : ''}
+        ${state !== 'passive' ? `<button class="action-btn danger" onclick="sendIdentify('${box.box_id}')">ID</button>` : ''}
       </div>
     </div>
   </div>`;
