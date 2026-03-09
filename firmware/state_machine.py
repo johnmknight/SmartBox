@@ -20,7 +20,16 @@ _current_state   = AWAY
 _previous_state  = None
 _state_since     = 0
 _on_change_callbacks = []
-_SETTLE_TIME     = 2.0
+# Settle times per target state.
+# DOCKING is transitional — resolve quickly so the brief USB-before-surface moment
+# is captured (or skipped cleanly if the box lands within the window).
+# All other states use 2.0s to debounce vibration / momentary sensor noise.
+_SETTLE_TIMES = {
+    DOCKED:   2.0,
+    AWAY:     2.0,
+    SET_DOWN: 2.0,
+    DOCKING:  0.5,   # transitional — settle fast
+}
 _pending_state   = None
 _pending_since   = 0
 
@@ -45,7 +54,7 @@ def poll():
         _pending_state = evaluated
         _pending_since = now
         return _current_state
-    if now - _pending_since >= _SETTLE_TIME:
+    if now - _pending_since >= _SETTLE_TIMES.get(_pending_state, 2.0):
         _previous_state = _current_state
         _current_state  = _pending_state
         _state_since    = now

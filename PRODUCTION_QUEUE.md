@@ -24,7 +24,7 @@
 - [x] Dashboard nav (Dashboard | Testing tabs)
 - [x] Red Alert — Wrath of Khan style (chevron brackets, converging scan line animation)
 - [x] Self Destruct — header text scale=2
-- [x] Fast render interval (80ms) during interrupts
+- [x] State machine transitions — DOCKING pixel color (cyan), per-state settle times (DOCKING=0.5s vs 2.0s for others), auto-mode-switch on DOCKED→toolbox / AWAY→clock
 - [x] Server scaffold (FastAPI + SQLite) + web dashboard (rack view, sort by rack/category)
 - [x] Category management API + seeded category list (18 categories with colors)
 - [x] Rack manager UI (racks.html) — create/assign boxes, graphical rack view

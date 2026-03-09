@@ -91,8 +91,24 @@ mqtt_client.on_message(mqtt_client.TOPIC_ALL_CLEAR,     handle_all_clear)
 # State machine
 def on_state_change(new_state, prev_state):
     mqtt_client.publish_state(new_state, mode_toolbox.current_category())
-    colors = {"DOCKED": 0x00FF80, "AWAY": 0xFF8C00, "SET_DOWN": 0xFFFF00}
+
+    # NeoPixel state colors
+    colors = {
+        "DOCKED":   0x00FF80,   # green  — in rack, charging
+        "AWAY":     0xFF8C00,   # amber  — being carried
+        "SET_DOWN": 0xFFFF00,   # yellow — placed, not in rack
+        "DOCKING":  0x00D4FF,   # cyan   — USB live, not yet seated
+    }
     display.set_pixel(colors.get(new_state, 0xFFFFFF))
+
+    # Auto-switch display mode on meaningful transitions
+    # DOCKED → toolbox (home screen)
+    # AWAY   → clock (useful while carrying; toolbox QR not needed)
+    # SET_DOWN / DOCKING → no forced switch (keep whatever was active)
+    if new_state == "DOCKED" and prev_state in ("AWAY", "DOCKING"):
+        display.set_mode(display.MODE_TOOLBOX)
+    elif new_state == "AWAY" and prev_state in ("DOCKED", "SET_DOWN", "DOCKING"):
+        display.set_mode(display.MODE_CLOCK)
 
 state_machine.on_change(on_state_change)
 state_machine.init()
