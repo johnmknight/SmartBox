@@ -50,6 +50,11 @@
 - [x] /m — Mobile fleet dashboard (box list, state-sorted, filter chips, live stats, 15s auto-refresh)
 - [x] /box/{id} — Redesigned detail page (state as visual centerpiece with glow, battery bar, bottom nav)
 - [x] mobile route registered in main.py, Mobile link added to desktop nav
+- [x] anthropic>=0.25.0 added to requirements.txt, installed to system Python 3.12
+- [x] ANTHROPIC_API_KEY added to .env and .env.example
+- [x] server/routes/ai_scan.py: POST /box/{id}/ai-scan — Claude vision, [AI] prefix append, dedup, timestamp separator
+- [x] box_detail.py: Scan Contents button, spinner, status text, [AI] badge on inventory items
+- [x] main.py: ai_scan router registered
 - [ ] PWA manifest + home screen icon (add to head on /m and /box/{id})
 - [ ] Swipe-to-refresh on /m (touch event handler)
 - [ ] Box detail — action sheet for MQTT commands (identify/reboot) via bottom nav
