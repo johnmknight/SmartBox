@@ -232,7 +232,16 @@ textarea:focus{{border-color:var(--cyan);}}
   background:none;border:none;}}
 .ni.on{{color:var(--cyan);}}
 .ni svg{{width:20px;height:20px;stroke:currentColor;stroke-width:1.5;fill:none;}}
-#file-input{{display:none;}}
+/* Scan button + spinner */
+.scan-bar{{display:flex;align-items:center;gap:8px;margin-bottom:12px;}}
+.btn-scan{{background:var(--cyan);color:#000;}}
+.btn-scan:active{{background:#00aacc;}}
+.btn-scan:disabled{{opacity:.5;cursor:default;}}
+.spinner{{display:none;width:16px;height:16px;border:2px solid var(--bd);
+  border-top-color:var(--cyan);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0;}}
+@keyframes spin{{to{{transform:rotate(360deg)}}}}
+.scan-status{{font-size:11px;color:var(--muted);letter-spacing:1px;}}
+#scan-file{{display:none;}}
 </style>
 </head>
 <body>
@@ -292,6 +301,13 @@ textarea:focus{{border-color:var(--cyan);}}
     Inventory Manifest
     <span class="sec-badge" id="inv-count"></span>
   </div>
+  <div class="scan-bar">
+    <button class="btn btn-scan" id="scan-btn"
+            onclick="document.getElementById('scan-file').click()">&#x1F4F7; Scan Contents</button>
+    <div class="spinner" id="scan-spin"></div>
+    <span class="scan-status" id="scan-status"></span>
+  </div>
+  <input type="file" id="scan-file" accept="image/*" capture="environment">
   <div id="inv-read">
     <div id="inv-list"></div>
     <div id="inv-empty" style="display:none;" class="inv-empty">No items — tap Edit to add inventory.</div>
@@ -369,8 +385,13 @@ function renderRead(txt){{
   else{{
     E.style.display='none';
     C.textContent=`(${{items.length}})`;
-    L.innerHTML=items.map(i=>`<div class="inv-item"><div class="inv-bullet"></div>
-      <div class="inv-text">${{i}}</div></div>`).join('');
+    L.innerHTML=items.map(i=>{{
+      const isAI=i.startsWith('[AI]');
+      const label=isAI?i.slice(4).trim():i;
+      const tag=isAI?'<span style="font-size:9px;color:var(--cyan);letter-spacing:1px;margin-left:6px;border:1px solid var(--cyan);padding:1px 5px;">AI</span>':'';
+      return `<div class="inv-item"><div class="inv-bullet"></div>
+        <div class="inv-text">${{label}}${{tag}}</div></div>`;
+    }}).join('');
   }}
 }}
 function showEdit(){{
@@ -397,6 +418,37 @@ async function saveInv(){{
   }}
 }}
 renderRead(RAW);
+// AI Scan
+document.getElementById('scan-file').addEventListener('change',async e=>{{
+  const f=e.target.files[0]; if(!f) return;
+  const btn=document.getElementById('scan-btn'),
+        spin=document.getElementById('scan-spin'),
+        status=document.getElementById('scan-status');
+  btn.disabled=true; spin.style.display='block'; status.textContent='Scanning…';
+  try{{
+    const fd=new FormData(); fd.append('file',f);
+    const r=await fetch(`/box/${{BOX_ID}}/ai-scan`,{{method:'POST',body:fd}});
+    const data=await r.json();
+    if(r.ok && data.ok){{
+      const n=data.new_items.length;
+      status.textContent=n?`${{n}} item${{n!==1?'s':''}} added`:'Nothing new detected';
+      if(n){{
+        renderRead(data.inventory);
+        // also refresh the hidden textarea for edit view
+        document.getElementById('inv-ta').value=data.inventory;
+        toast(`AI found ${{n}} new item${{n!==1?'s':''}}`);
+      }}
+    }}else{{
+      status.textContent=data.detail||'Scan failed';
+    }}
+  }}catch(err){{
+    status.textContent='Network error';
+  }}finally{{
+    btn.disabled=false; spin.style.display='none';
+    e.target.value='';
+    setTimeout(()=>status.textContent='',4000);
+  }}
+}});
 // Live state refresh
 (async()=>{{
   try{{
