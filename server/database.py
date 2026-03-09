@@ -63,7 +63,10 @@ async def init_db():
         for col, defn in [
             ("inventory",    "TEXT DEFAULT ''"),
             ("photo_path",   "TEXT"),
-            ("zone",         "TEXT DEFAULT ''"),
+            ("zone",                "TEXT DEFAULT ''"),
+            ("last_rfid_accessed",  "DATETIME DEFAULT NULL"),
+            ("rfid_provisioned",    "BOOLEAN DEFAULT 0"),
+            ("rfid_provisioned_at", "DATETIME DEFAULT NULL"),
         ]:
             try:
                 await db.execute(f"ALTER TABLE boxes ADD COLUMN {col} {defn}")

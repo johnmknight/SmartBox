@@ -36,8 +36,25 @@
 - [x] Category badge font doubled on all label templates (Plain, NASA, Cargo)
 - [x] Passive box treatment — battery bar + smart buttons hidden in dashboard and detail page
 - [x] box_detail.py — category badge font doubled on mobile detail page
+- [x] RFID/NFC sprint — NTAG215 provisioning system
+  - database.py: last_rfid_accessed, rfid_provisioned, rfid_provisioned_at migration columns
+  - box_detail.py: ?via=rfid, rfid-ping POST, Last NFC Tap + Last Seen in meta row, live state refresh via JS fetch
+  - routes/rfid.py: /provision dashboard, /provision/{id}/write (NFC Tools primary flow), /provision/{id}/confirm
+  - main.py: rfid router registered
+  - index.html: NFC nav link added
+  - rfid.py: NFC_HOST/NFC_PORT env vars, correct default 192.168.4.47
+  - .env + .env.example: NFC_HOST=192.168.4.47, NFC_PORT=8091
+  - Write page: Web NFC removed (Option C), NFC Tools is sole path, clipboard fallback, already-provisioned badge, confirm error recovery, 800ms next-box delay
 
-### NEXT UP 🔜
+### MOBILE UI — In Progress 📱
+- [x] /m — Mobile fleet dashboard (box list, state-sorted, filter chips, live stats, 15s auto-refresh)
+- [x] /box/{id} — Redesigned detail page (state as visual centerpiece with glow, battery bar, bottom nav)
+- [x] mobile route registered in main.py, Mobile link added to desktop nav
+- [ ] PWA manifest + home screen icon (add to head on /m and /box/{id})
+- [ ] Swipe-to-refresh on /m (touch event handler)
+- [ ] Box detail — action sheet for MQTT commands (identify/reboot) via bottom nav
+- [ ] Box detail — photo lightbox (tap to expand full-screen)
+- [ ] Offline state: service worker caches last-known box data
 - [ ] Flash firmware to first Feather and test boot sequence
 - [ ] Calibrate proximity_threshold with VCNL4020 mounted
 - [ ] Test USB connect/disconnect state transitions
@@ -46,10 +63,10 @@
 - [ ] Weather relay (HA or OpenWeatherMap)
 - [ ] HA Discovery publisher
 - [ ] Marchog integration bridge
-- [ ] /box/{id} — inventory display (read-only view of saved manifest)
-- [ ] Label generator — Hazard template category badge (no badge currently)
-- [ ] .env.example + install.sh
-- [ ] docs/FIRMWARE_SETUP.md
+- [x] /box/{id} — inventory display (read-only manifest view with item count, Edit toggle, cancel)
+- [x] Label generator — Hazard template category badge (black-on-yellow badge, wired to cat color system)
+- [x] .env.example + install.sh (Python version check, venv, pip, .env copy, data/photos mkdir, Mosquitto check, DB init)
+- [x] docs/FIRMWARE_SETUP.md (hardware, CircuitPython flash, library list, config.json reference, boot sequence, proximity calibration, state machine verification, button nav, known issues, MQTT topics)
 
 ### BLOCKED ⏸
 - [ ] MAX17048 battery monitor — possible hardware defect on current board

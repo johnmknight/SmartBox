@@ -13,6 +13,8 @@ load_dotenv()
 
 from server.database import init_db, get_db, DB_PATH
 from server.routes import boxes, categories, box_detail, racks
+from server.routes import rfid as rfid_routes
+from server.routes import mobile as mobile_routes
 from server.mqtt import listener
 from server.weather import poller as weather_poller
 import aiosqlite
@@ -112,6 +114,8 @@ app.include_router(boxes.router)
 app.include_router(categories.router)
 app.include_router(box_detail.router)
 app.include_router(racks.router)
+app.include_router(rfid_routes.router)
+app.include_router(mobile_routes.router)
 
 app.mount("/client", StaticFiles(directory=str(_CLIENT)), name="client")
 

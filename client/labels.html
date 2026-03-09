@@ -213,6 +213,10 @@ textarea{resize:vertical;min-height:48px;}
   text-transform:uppercase;letter-spacing:-2px;
   word-break:break-word;overflow:hidden;max-height:155px;}
 .tpl-hazard .bottom-row{display:flex;flex-direction:column;gap:4px;}
+.tpl-hazard .cat-badge{
+  display:inline-block;font-size:1.1rem;font-weight:900;letter-spacing:2px;
+  text-transform:uppercase;padding:2px 10px;border:2px solid #1a1a1a;
+  color:#1a1a1a;background:#f5c400;align-self:flex-start;margin-bottom:4px;}
 .tpl-hazard .meta{display:flex;gap:20px;}
 .tpl-hazard .meta-item{display:flex;flex-direction:column;}
 .tpl-hazard .meta-key{font-size:.52rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#aaa;}
@@ -411,6 +415,7 @@ textarea{resize:vertical;min-height:48px;}
       <div class="text-col">
         <div class="name" id="hp-name"></div>
         <div class="bottom-row">
+          <span class="cat-badge" id="hp-cat"></span>
           <div class="meta">
             <div class="meta-item"><span class="meta-key">Zone</span><span class="meta-val" id="hp-zone"></span></div>
             <div class="meta-item"><span class="meta-key">Rack</span><span class="meta-val" id="hp-rack"></span></div>
@@ -591,6 +596,8 @@ function updateLabel() {
   // ── HAZARD ──
   setText('hp-name', name);
   setText('hp-type', cat);
+  const hp_c = document.getElementById('hp-cat');
+  if (hp_c) hp_c.textContent = cat;
   setText('hp-zone', zone);
   setText('hp-rack', rack);
   setText('hp-contents', contents);
