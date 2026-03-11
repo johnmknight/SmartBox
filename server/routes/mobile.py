@@ -29,7 +29,6 @@ _HTML = """<!DOCTYPE html>
 body{background:var(--bg);color:var(--text);font-family:var(--fm);
   min-height:100vh;padding-bottom:calc(56px + env(safe-area-inset-bottom));}
 </style>
-/* ── Header ─────────────────────────────── */
 <style>
 .hdr{background:var(--bg2);border-bottom:1px solid var(--border);
   position:sticky;top:0;z-index:100;}

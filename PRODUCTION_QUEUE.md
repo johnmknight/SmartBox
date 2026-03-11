@@ -46,6 +46,13 @@
   - .env + .env.example: NFC_HOST=192.168.4.47, NFC_PORT=8091
   - Write page: Web NFC removed (Option C), NFC Tools is sole path, clipboard fallback, already-provisioned badge, confirm error recovery, 800ms next-box delay
 
+### DEPLOYMENT ✅
+- [x] Docker ARM64 build + push pipeline (pi-deploy/deploy.bat)
+- [x] appserv1 static IP (192.168.4.148) + Pi-hole DNS (appserv1.local)
+- [x] Docker compose — smarttoolbox exposed on port 8091 (direct, bypasses nginx path issues)
+- [x] DB migrated from dev PC to appserv1
+- [x] Mobile header CSS comment bug fixed (naked comment between </style><style> tags)
+
 ### MOBILE UI — In Progress 📱
 - [x] /m — Mobile fleet dashboard (box list, state-sorted, filter chips, live stats, 15s auto-refresh)
 - [x] /box/{id} — Redesigned detail page (state as visual centerpiece with glow, battery bar, bottom nav)
