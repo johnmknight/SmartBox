@@ -1,0 +1,31 @@
+# Secrets — never bake into image
+.env
+
+# Runtime data — volume mounted at deploy time
+data/
+
+# Dev logs
+server.err
+server.log
+*.log
+*.err
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Git
+.git/
+.gitignore
+
+# Dev scripts
+push.bat
+push_fix.bat
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docs (optional — comment out if you want docs in image)
+# docs/

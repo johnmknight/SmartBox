@@ -2,4 +2,10 @@ data/
 .env
 __pycache__/
 *.pyc
+*.pyo
 .DS_Store
+Thumbs.db
+server.err
+server.log
+*.log
+*.err
