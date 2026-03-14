@@ -955,7 +955,13 @@ header {
 <div class="toast" id="toast"></div>
 
 <script>
-const API = '';
+// Auto-detect reverse proxy prefix (e.g. '/toolbox' behind nginx, '' on direct port)
+const API = (() => {
+  const seg = window.location.pathname.split('/')[1] || '';
+  if (!seg || seg.includes('.') || ['client','api','static','testing','provision','m','scan','mobile'].includes(seg))
+    return '';
+  return '/' + seg;
+})();
 let _boxes = [];
 let _categories = [];
 let _racks = {};  // keyed by rack_id
@@ -1475,6 +1481,11 @@ document.getElementById('modal').addEventListener('click', e => {
 
 // ─── Init & poll ──────────────────────────────────────────
 async function init() {
+  // Fix nav links for reverse proxy subpath
+  if (API) document.querySelectorAll('nav a, .nav a, header a').forEach(a => {
+    const h = a.getAttribute('href');
+    if (h && h.startsWith('/') && !h.startsWith('//')) a.setAttribute('href', API + h);
+  });
   await fetchCategories();
   await fetchRacks();
   await fetchBoxes();

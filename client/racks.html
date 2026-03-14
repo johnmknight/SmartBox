@@ -270,6 +270,19 @@ header{display:flex;align-items:center;gap:16px;padding:0 24px;
 <div class="toast" id="toast" style="opacity:0;"></div>
 
 <script>
+// Auto-detect reverse proxy prefix (e.g. '/toolbox' behind nginx, '' on direct port)
+const API = (() => {
+  const seg = window.location.pathname.split('/')[1] || '';
+  if (!seg || seg.includes('.') || ['client','api','static','testing','provision','m','scan','mobile'].includes(seg))
+    return '';
+  return '/' + seg;
+})();
+// Fix nav links for proxy subpath
+if (API) document.querySelectorAll('a[href^="/"]').forEach(a => {
+  const h = a.getAttribute('href');
+  if (!h.startsWith('//')) a.setAttribute('href', API + h);
+});
+
 let racks = [];
 let boxes = [];
 let categories = {};
@@ -279,7 +292,7 @@ let editOpen = false;
 // ── CATEGORY COLOR MAP ─────────────────────────────────
 async function loadCategories() {
   try {
-    const res = await fetch('/api/categories/');
+    const res = await fetch(`${API}/api/categories/`);
     const cats = await res.json();
     cats.forEach(c => { categories[c.name] = c.color; });
   } catch(e) { /* fallback colors inline */ }
@@ -303,8 +316,8 @@ async function load() {
   await loadCategories();
   try {
     const [rRes, bRes] = await Promise.all([
-      fetch('/api/racks/'),
-      fetch('/api/boxes/')
+      fetch(`${API}/api/racks/`),
+      fetch(`${API}/api/boxes/`)
     ]);
     racks = await rRes.json();
     boxes = await bRes.json();
@@ -464,7 +477,7 @@ async function saveRack() {
   if (!currentRack) return;
   const name = document.getElementById('edit-name').value.trim();
   const zone = document.getElementById('edit-zone').value.trim();
-  const res = await fetch(`/api/racks/${currentRack.rack_id}`, {
+  const res = await fetch(`${API}/api/racks/${currentRack.rack_id}`, {
     method: 'PATCH',
     headers: {'Content-Type':'application/json'},
     body: JSON.stringify({display_name: name, zone: zone})
@@ -496,7 +509,7 @@ async function createRack() {
   const name = document.getElementById('new-rack-name').value.trim();
   const zone = document.getElementById('new-rack-zone').value.trim();
   if (!id) { toast('Rack ID required', true); return; }
-  const res = await fetch('/api/racks/', {
+  const res = await fetch(`${API}/api/racks/`, {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
     body: JSON.stringify({rack_id: id, display_name: name || id, zone})
@@ -519,7 +532,7 @@ async function createRack() {
 async function deleteRack() {
   if (!currentRack) return;
   if (!confirm(`Delete rack ${currentRack.rack_id}? Boxes will remain but lose their rack assignment.`)) return;
-  const res = await fetch(`/api/racks/${currentRack.rack_id}`, {method: 'DELETE'});
+  const res = await fetch(`${API}/api/racks/${currentRack.rack_id}`, {method: 'DELETE'});
   if (res.ok) {
     toast('Rack deleted');
     currentRack = null;
@@ -560,7 +573,7 @@ async function createBox() {
   const type = document.getElementById('new-box-type').value;
   const rack = document.getElementById('new-box-rack').value;
   if (!id) { toast('Box ID required', true); return; }
-  const res = await fetch('/api/boxes/', {
+  const res = await fetch(`${API}/api/boxes/`, {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
     body: JSON.stringify({
@@ -617,7 +630,7 @@ async function assignBox() {
   const sel = document.getElementById('assign-select');
   if (!sel || !sel.value) return;
   const boxId = sel.value;
-  const res = await fetch(`/api/boxes/${boxId}`, {
+  const res = await fetch(`${API}/api/boxes/${boxId}`, {
     method: 'PATCH',
     headers: {'Content-Type':'application/json'},
     body: JSON.stringify({rack_id: currentRack.rack_id})
@@ -635,7 +648,7 @@ async function assignBox() {
 }
 
 async function removeBox(boxId) {
-  const res = await fetch(`/api/boxes/${boxId}`, {
+  const res = await fetch(`${API}/api/boxes/${boxId}`, {
     method: 'PATCH',
     headers: {'Content-Type':'application/json'},
     body: JSON.stringify({rack_id: '__NONE__'})

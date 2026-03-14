@@ -455,6 +455,19 @@ textarea{resize:vertical;min-height:48px;}
 
 </div><!-- /main -->
 <script>
+// Auto-detect reverse proxy prefix (e.g. '/toolbox' behind nginx, '' on direct port)
+const API = (() => {
+  const seg = window.location.pathname.split('/')[1] || '';
+  if (!seg || seg.includes('.') || ['client','api','static','testing','provision','m','scan','mobile'].includes(seg))
+    return '';
+  return '/' + seg;
+})();
+// Fix nav links for proxy subpath
+if (API) document.querySelectorAll('a[href^="/"]').forEach(a => {
+  const h = a.getAttribute('href');
+  if (!h.startsWith('//')) a.setAttribute('href', API + h);
+});
+
 let catColor = '#e53e3e';
 let currentTemplate = 'plain';
 let currentBox = null; // holds the selected box object from DB
@@ -462,7 +475,7 @@ let currentBox = null; // holds the selected box object from DB
 // ── DB LOAD ──────────────────────────────────────────────
 async function loadBoxList() {
   try {
-    const res = await fetch('/api/boxes/');
+    const res = await fetch(`${API}/api/boxes/`);
     const boxes = await res.json();
     const sel = document.getElementById('box-select');
     sel.innerHTML = '<option value="">— select a box —</option>';
@@ -491,7 +504,7 @@ async function loadBox(boxId) {
     return;
   }
   try {
-    const res = await fetch('/api/boxes/' + boxId);
+    const res = await fetch(`${API}/api/boxes/` + boxId);
     currentBox = await res.json();
     // Populate read-only display fields
     setDisp('disp-id',   currentBox.box_id   || '—');

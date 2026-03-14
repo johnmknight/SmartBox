@@ -234,11 +234,24 @@ body::before { content: ''; position: fixed; inset: 0;
 </div>
 <div class="toast" id="toast"></div>
 <script>
+// Auto-detect reverse proxy prefix (e.g. '/toolbox' behind nginx, '' on direct port)
+const API = (() => {
+  const seg = window.location.pathname.split('/')[1] || '';
+  if (!seg || seg.includes('.') || ['client','api','static','testing','provision','m','scan','mobile'].includes(seg))
+    return '';
+  return '/' + seg;
+})();
+// Fix nav links for proxy subpath
+if (API) document.querySelectorAll('a[href^="/"]').forEach(a => {
+  const h = a.getAttribute('href');
+  if (!h.startsWith('//')) a.setAttribute('href', API + h);
+});
+
 let _boxes = [];
 
 async function loadBoxes() {
   try {
-    const r = await fetch('/api/boxes/');
+    const r = await fetch(`${API}/api/boxes/`);
     _boxes = await r.json();
     const sel = document.getElementById('box-select');
     sel.innerHTML = _boxes.map(b =>
@@ -256,7 +269,7 @@ async function sendCmd(action, extra={}) {
   if (!boxId) { toast('Select a box'); return; }
   const body = { action, ...extra };
   try {
-    const r = await fetch(`/api/boxes/${boxId}/command`, {
+    const r = await fetch(`${API}/api/boxes/${boxId}/command`, {
       method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify(body)
     });
@@ -299,7 +312,7 @@ async function pushWeather() {
     location: document.getElementById('wx-location').value,
   };
   try {
-    const r = await fetch(`/api/boxes/${boxId}/weather`, {
+    const r = await fetch(`${API}/api/boxes/${boxId}/weather`, {
       method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify(payload)
     });
