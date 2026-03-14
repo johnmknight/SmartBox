@@ -105,8 +105,8 @@ async def box_page(box_id: str, via: str = None, db=Depends(get_db)):
                 f'<span class="mv">{last_rfid}</span></div>' if last_rfid else "")
 
     # Via-RFID JS (fire-and-forget ping + strip query param)
-    via_js = (f'fetch("/box/{box_id}/rfid-ping",{{method:"POST"}}).catch(()=>{{}});'
-              f'history.replaceState({{}},"","/box/{box_id}");') if via == "rfid" else ""
+    via_js = (f'fetch(API+"/box/{box_id}/rfid-ping",{{method:"POST"}}).catch(()=>{{}});'
+              f'history.replaceState({{}},"",location.pathname);') if via == "rfid" else ""
 
     # Photo
     photo_html = (f'<img id="photo-img" src="/api/boxes/{box_id}/photo?t=0" alt="Interior"'
@@ -348,6 +348,10 @@ textarea:focus{{border-color:var(--cyan);}}
 </nav>
 
 <script>
+const _seg=window.location.pathname.split('/')[1]||'';
+const API=(!_seg||_seg.includes('.')||['client','api','static','testing','provision','m','scan','mobile','box'].includes(_seg))?'':'/'+_seg;
+if(API){{document.querySelectorAll('a[href^="/"]').forEach(function(a){{const h=a.getAttribute('href');if(!h.startsWith('//'))a.setAttribute('href',API+h);}});
+document.querySelectorAll('img[src^="/"]').forEach(function(i){{i.setAttribute('src',API+i.getAttribute('src'));}});}}
 const BOX_ID="{box_id}";
 {via_js}
 // Back button: use browser history if available, else fall back to fleet
@@ -362,13 +366,13 @@ const BOX_ID="{box_id}";
 document.getElementById('file-input').addEventListener('change',async e=>{{
   const f=e.target.files[0]; if(!f) return;
   const fd=new FormData(); fd.append('file',f);
-  const r=await fetch(`/api/boxes/${{BOX_ID}}/photo`,{{method:'POST',body:fd}});
+  const r=await fetch(API+`/api/boxes/${{BOX_ID}}/photo`,{{method:'POST',body:fd}});
   if(r.ok){{
     const ts=Date.now(), img=document.getElementById('photo-img');
-    if(img){{img.src=`/api/boxes/${{BOX_ID}}/photo?t=${{ts}}`;img.style.display='block';}}
+    if(img){{img.src=API+`/api/boxes/${{BOX_ID}}/photo?t=${{ts}}`;img.style.display='block';}}
     else{{
       const w=document.querySelector('.photo-wrap'),ni=document.createElement('img');
-      ni.id='photo-img'; ni.src=`/api/boxes/${{BOX_ID}}/photo?t=${{ts}}`; ni.alt='Interior';
+      ni.id='photo-img'; ni.src=API+`/api/boxes/${{BOX_ID}}/photo?t=${{ts}}`; ni.alt='Interior';
       w.insertBefore(ni,w.firstChild);
     }}
     const np=document.getElementById('no-photo'); if(np) np.style.display='none';
@@ -407,7 +411,7 @@ function cancelEdit(){{
 async function saveInv(){{
   const txt=document.getElementById('inv-ta').value,
         btn=document.getElementById('save-btn');
-  const r=await fetch(`/api/boxes/${{BOX_ID}}/inventory`,{{
+  const r=await fetch(API+`/api/boxes/${{BOX_ID}}/inventory`,{{
     method:'PUT',headers:{{'Content-Type':'application/json'}},
     body:JSON.stringify({{inventory:txt}})
   }});
@@ -427,7 +431,7 @@ document.getElementById('scan-file').addEventListener('change',async e=>{{
   btn.disabled=true; spin.style.display='block'; status.textContent='Scanning…';
   try{{
     const fd=new FormData(); fd.append('file',f);
-    const r=await fetch(`/box/${{BOX_ID}}/ai-scan`,{{method:'POST',body:fd}});
+    const r=await fetch(API+`/box/${{BOX_ID}}/ai-scan`,{{method:'POST',body:fd}});
     const data=await r.json();
     if(r.ok && data.ok){{
       const n=data.new_items.length;
@@ -452,7 +456,7 @@ document.getElementById('scan-file').addEventListener('change',async e=>{{
 // Live state refresh
 (async()=>{{
   try{{
-    const r=await fetch(`/api/boxes/${{BOX_ID}}`); if(!r.ok) return;
+    const r=await fetch(API+`/api/boxes/${{BOX_ID}}`); if(!r.ok) return;
     const b=await r.json();
     const CS={{DOCKED:['#00ff80','rgba(0,255,128,.10)','0 0 28px rgba(0,255,128,.35)'],
                 AWAY:  ['#f59e0b','rgba(245,158,11,.10)','0 0 28px rgba(245,158,11,.35)'],
@@ -472,7 +476,7 @@ document.getElementById('scan-file').addEventListener('change',async e=>{{
 // Event log
 (async()=>{{
   try{{
-    const r=await fetch(`/api/boxes/${{BOX_ID}}/events?limit=20`);
+    const r=await fetch(API+`/api/boxes/${{BOX_ID}}/events?limit=20`);
     if(!r.ok) return;
     const evts=await r.json(),log=document.getElementById('evt-log');
     if(!evts.length){{log.innerHTML='<div style="font-size:12px;color:#334155;">No events yet</div>';return;}}

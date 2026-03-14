@@ -145,13 +145,17 @@ body{background:var(--bg);color:var(--text);font-family:var(--fm);
       <path d="M3 9h18M9 21V9"/></svg>Desk</a>
 </nav>
 <script>
+const API=(()=>{const s=window.location.pathname.split('/')[1]||'';
+if(!s||s.includes('.')||['client','api','static','testing','provision','m','scan','mobile'].includes(s))return'';
+return'/'+s;})();
+if(API)document.querySelectorAll('a[href^="/"]').forEach(a=>{const h=a.getAttribute('href');if(!h.startsWith('//'))a.setAttribute('href',API+h);});
 let _boxes=[],_filter='all',_timer=null;
 const SO={AWAY:0,SET_DOWN:1,DOCKING:2,DOCKED:3};
 async function load(){
   const dot=document.getElementById('cdot'),btn=document.getElementById('rbtn');
   btn.classList.add('spin');
   try{
-    const r=await fetch('/api/boxes/');
+    const r=await fetch(API+'/api/boxes/');
     if(!r.ok) throw new Error(r.status);
     _boxes=await r.json();
     dot.className='cdot live';

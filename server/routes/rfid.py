@@ -272,6 +272,9 @@ async def provision_write_page(box_id: str, db=Depends(get_db)):
 <div class="toast" id="toast"></div>
 
 <script>
+const _seg=window.location.pathname.split('/')[1]||'';
+const API=(!_seg||_seg.includes('.')||['client','api','static','testing','provision','m','scan','mobile'].includes(_seg))?'':'/'+_seg;
+if(API)document.querySelectorAll('a[href^="/"]').forEach(function(a){{const h=a.getAttribute('href');if(!h.startsWith('//'))a.setAttribute('href',API+h);}});
 const BOX_ID = "{box_id}";
 const TAG_URI = "{tag_uri}";
 
@@ -294,7 +297,7 @@ async function markProvisioned() {{
   btn.disabled = true;
   btn.textContent = '...';
   try {{
-    const r = await fetch(`/provision/${{BOX_ID}}/confirm`, {{method: 'POST'}});
+    const r = await fetch(API+`/provision/${{BOX_ID}}/confirm`, {{method: 'POST'}});
     if (r.ok) {{
       btn.classList.add('btn-success');
       btn.textContent = '&#x2713; PROVISIONED';
